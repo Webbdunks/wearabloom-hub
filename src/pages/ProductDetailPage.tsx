@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, Minus, Plus, ShoppingBag } from 'lucide-react';
+import { ChevronLeft, Heart, Minus, Plus, ShoppingBag } from 'lucide-react';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/select';
 import { getProductById } from '@/data/products';
 import { useCart } from '@/context/CartContext';
+import { useWishlist } from '@/context/WishlistContext';
 import ProductGrid from '@/components/products/ProductGrid';
 import { getProductsByCategory } from '@/data/products';
 
@@ -21,12 +22,15 @@ const ProductDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { addItem } = useCart();
+  const { addItem: addToWishlist, removeItem: removeFromWishlist, isInWishlist } = useWishlist();
   
   const [product, setProduct] = useState(id ? getProductById(id) : undefined);
   const [selectedSize, setSelectedSize] = useState<string>('');
   const [quantity, setQuantity] = useState(1);
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [isImageLoaded, setIsImageLoaded] = useState(false);
+
+  const inWishlist = product ? isInWishlist(product.id) : false;
 
   useEffect(() => {
     if (!product) {
@@ -57,6 +61,16 @@ const ProductDetailPage = () => {
   const handleAddToCart = () => {
     if (product && selectedSize) {
       addItem(product, quantity, selectedSize);
+    }
+  };
+
+  const handleWishlistToggle = () => {
+    if (!product) return;
+    
+    if (inWishlist) {
+      removeFromWishlist(product.id);
+    } else {
+      addToWishlist(product);
     }
   };
 
@@ -171,15 +185,27 @@ const ProductDetailPage = () => {
               </div>
             </div>
             
-            {/* Add to cart */}
-            <Button 
-              className="w-full flex items-center justify-center gap-2 mb-6" 
-              size="lg" 
-              onClick={handleAddToCart}
-              disabled={!selectedSize}
-            >
-              <ShoppingBag size={18} /> Add to Cart
-            </Button>
+            {/* Add to cart and wishlist */}
+            <div className="flex flex-col sm:flex-row gap-4 mb-6">
+              <Button 
+                className="flex-1 flex items-center justify-center gap-2" 
+                size="lg" 
+                onClick={handleAddToCart}
+                disabled={!selectedSize}
+              >
+                <ShoppingBag size={18} /> Add to Cart
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                size="lg"
+                className={inWishlist ? "text-red-500" : ""}
+                onClick={handleWishlistToggle}
+              >
+                <Heart className={`mr-2 ${inWishlist ? "fill-current" : ""}`} size={18} />
+                {inWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
+              </Button>
+            </div>
             
             {/* Additional information */}
             <Separator className="my-6" />
