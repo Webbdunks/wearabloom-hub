@@ -1,10 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ShoppingCart, User, Menu, X, Search } from 'lucide-react';
+import { ShoppingCart, User, Menu, X, Search, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
+import { useWishlist } from '@/context/WishlistContext';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,6 +17,7 @@ import { cn } from '@/lib/utils';
 const Header = () => {
   const { user, logout } = useAuth();
   const { totalItems } = useCart();
+  const { totalItems: wishlistTotalItems } = useWishlist();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
@@ -106,6 +108,16 @@ const Header = () => {
               </Link>
             )}
             
+            {/* Wishlist Icon */}
+            <Link to="/wishlist" className="relative p-1">
+              <Heart className="h-5 w-5" />
+              {wishlistTotalItems > 0 && (
+                <span className="absolute -top-1 -right-1 h-4 w-4 text-[10px] flex items-center justify-center rounded-full bg-black text-white">
+                  {wishlistTotalItems}
+                </span>
+              )}
+            </Link>
+            
             <Link to="/cart" className="relative p-1">
               <ShoppingCart className="h-5 w-5" />
               {totalItems > 0 && (
@@ -171,6 +183,13 @@ const Header = () => {
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 Accessories
+              </Link>
+              <Link 
+                to="/wishlist" 
+                className="text-xl font-medium"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Wishlist
               </Link>
               {!user && (
                 <>
