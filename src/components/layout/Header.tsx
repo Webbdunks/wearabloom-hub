@@ -50,7 +50,7 @@ const Header = () => {
             to="/" 
             className="text-xl font-semibold tracking-tight"
           >
-            BLOOM
+            SHEERA
           </Link>
 
           {/* Desktop Navigation */}
@@ -150,7 +150,7 @@ const Header = () => {
                 className="text-xl font-semibold tracking-tight"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                BLOOM
+                SHEERA
               </Link>
               <Button 
                 variant="ghost" 

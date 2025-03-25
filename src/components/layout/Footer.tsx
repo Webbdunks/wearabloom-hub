@@ -52,7 +52,7 @@ const Footer = () => {
               <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="text-foreground hover:text-muted-foreground transition-colors">
                 <Facebook size={18} />
               </a>
-              <a href="mailto:contact@bloom.com" className="text-foreground hover:text-muted-foreground transition-colors">
+              <a href="mailto:contact@sheera.com" className="text-foreground hover:text-muted-foreground transition-colors">
                 <Mail size={18} />
               </a>
             </div>
@@ -78,7 +78,7 @@ const Footer = () => {
         <div className="pt-8 border-t border-border">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-sm text-muted-foreground mb-4 md:mb-0">
-              © {currentYear} BLOOM. All rights reserved.
+              © {currentYear} SHEERA. All rights reserved.
             </p>
             <div className="flex space-x-6">
               <Link to="/privacy-policy" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
