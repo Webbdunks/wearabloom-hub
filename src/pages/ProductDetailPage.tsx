@@ -131,7 +131,7 @@ const ProductDetailPage = () => {
               {product.name}
             </h1>
             <p className="text-xl mb-6">
-              ${product.price.toFixed(2)}
+              ₹{product.price.toFixed(2)}
             </p>
             
             <p className="text-muted-foreground mb-8">
