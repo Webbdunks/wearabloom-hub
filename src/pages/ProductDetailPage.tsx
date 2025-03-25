@@ -17,6 +17,7 @@ import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
 import ProductGrid from '@/components/products/ProductGrid';
 import { getProductsByCategory } from '@/data/products';
+import { toast } from 'sonner';
 
 const ProductDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -59,8 +60,11 @@ const ProductDetailPage = () => {
   }, [id, product, navigate]);
 
   const handleAddToCart = () => {
-    if (product && selectedSize) {
-      addItem(product, quantity, selectedSize);
+    if (product) {
+      // Use default size if none selected
+      const sizeToUse = selectedSize || (product.sizes.length > 0 ? product.sizes[0] : "");
+      addItem(product, quantity, sizeToUse);
+      toast.success(`Added ${product.name} to cart`);
     }
   };
 
