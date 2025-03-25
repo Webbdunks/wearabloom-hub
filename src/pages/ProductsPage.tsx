@@ -1,9 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import ProductGrid from '@/components/products/ProductGrid';
 import { Product } from '@/types';
+import { Input } from '@/components/ui/input';
+import { Search } from 'lucide-react';
 import { 
   products, 
   getProductsByCategory, 
@@ -27,6 +29,8 @@ const ProductsPage = () => {
   const [sortOption, setSortOption] = useState("featured");
   const [priceRange, setPriceRange] = useState([0, 300]);
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const navigate = useNavigate();
 
   // All possible sizes from products
   const allSizes = Array.from(
@@ -43,6 +47,14 @@ const ProductsPage = () => {
       filteredProducts = getProductsByCategory(category);
     } else {
       filteredProducts = [...products];
+    }
+    
+    // Filter by search term
+    if (searchTerm) {
+      filteredProducts = filteredProducts.filter(product => {
+        const searchableText = `${product.name} ${product.description} ${product.category}`.toLowerCase();
+        return searchableText.includes(searchTerm.toLowerCase());
+      });
     }
     
     // Filter by price range
@@ -84,7 +96,7 @@ const ProductsPage = () => {
     }
     
     setDisplayProducts(filteredProducts);
-  }, [category, sortOption, priceRange, selectedSizes]);
+  }, [category, sortOption, priceRange, selectedSizes, searchTerm]);
 
   const handleSizeChange = (size: string) => {
     setSelectedSizes(prev => {
@@ -94,6 +106,13 @@ const ProductsPage = () => {
         return [...prev, size];
       }
     });
+  };
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchTerm.trim()) {
+      navigate(`/search?q=${encodeURIComponent(searchTerm.trim())}`);
+    }
   };
 
   const categoryTitle = category 
@@ -113,6 +132,28 @@ const ProductsPage = () => {
           <div className="w-full lg:w-64 shrink-0">
             <div className="sticky top-24">
               <h2 className="font-medium mb-4">Filters</h2>
+              
+              {/* Quick Search */}
+              <div className="mb-6">
+                <h3 className="text-sm mb-3">Quick Search</h3>
+                <form onSubmit={handleSearchSubmit} className="relative">
+                  <Input
+                    type="text"
+                    placeholder="Search within results..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pr-8"
+                  />
+                  <button 
+                    type="submit" 
+                    className="absolute right-2 top-1/2 -translate-y-1/2"
+                  >
+                    <Search className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                </form>
+              </div>
+              
+              <Separator className="my-6" />
               
               {/* Price range filter */}
               <div className="mb-6">
