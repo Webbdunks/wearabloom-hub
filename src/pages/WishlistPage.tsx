@@ -91,7 +91,7 @@ const WishlistPage = () => {
                         {product.name}
                       </Link>
                     </TableCell>
-                    <TableCell>${product.price.toFixed(2)}</TableCell>
+                    <TableCell>र{product.price.toFixed(2)}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         <Button 

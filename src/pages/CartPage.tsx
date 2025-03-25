@@ -21,7 +21,7 @@ const CartPage = () => {
     }
   };
   
-  // Calculate shipping cost (free over $100)
+  // Calculate shipping cost (free over र100)
   const shippingCost = subtotal >= 100 ? 0 : 10;
   const tax = subtotal * 0.08; // 8% tax rate
   const total = subtotal + shippingCost + tax;
@@ -61,7 +61,7 @@ const CartPage = () => {
                         </p>
                       </div>
                       <p className="font-medium">
-                        ${(item.product.price * item.quantity).toFixed(2)}
+                        र{(item.product.price * item.quantity).toFixed(2)}
                       </p>
                     </div>
                     
@@ -125,15 +125,15 @@ const CartPage = () => {
                 <div className="space-y-4 text-sm">
                   <div className="flex justify-between">
                     <p>Subtotal</p>
-                    <p>${subtotal.toFixed(2)}</p>
+                    <p>र{subtotal.toFixed(2)}</p>
                   </div>
                   <div className="flex justify-between">
                     <p>Shipping</p>
-                    <p>{shippingCost === 0 ? 'Free' : `$${shippingCost.toFixed(2)}`}</p>
+                    <p>{shippingCost === 0 ? 'Free' : `र${shippingCost.toFixed(2)}`}</p>
                   </div>
                   <div className="flex justify-between">
                     <p>Tax (8%)</p>
-                    <p>${tax.toFixed(2)}</p>
+                    <p>र{tax.toFixed(2)}</p>
                   </div>
                 </div>
                 
@@ -141,7 +141,7 @@ const CartPage = () => {
                 
                 <div className="flex justify-between font-medium mb-6">
                   <p>Total</p>
-                  <p>${total.toFixed(2)}</p>
+                  <p>र{total.toFixed(2)}</p>
                 </div>
                 
                 <Button 

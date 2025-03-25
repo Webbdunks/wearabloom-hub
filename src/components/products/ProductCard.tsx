@@ -64,7 +64,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, className }) => {
         {product.name}
       </h3>
       <p className="text-sm text-muted-foreground">
-        ₹{product.price.toFixed(2)}
+        र{product.price.toFixed(2)}
       </p>
     </Link>
   );

@@ -131,7 +131,7 @@ const ProductDetailPage = () => {
               {product.name}
             </h1>
             <p className="text-xl mb-6">
-              ₹{product.price.toFixed(2)}
+              र{product.price.toFixed(2)}
             </p>
             
             <p className="text-muted-foreground mb-8">
@@ -191,7 +191,6 @@ const ProductDetailPage = () => {
                 className="flex-1 flex items-center justify-center gap-2" 
                 size="lg" 
                 onClick={handleAddToCart}
-                disabled={!selectedSize}
               >
                 <ShoppingBag size={18} /> Add to Cart
               </Button>
@@ -211,7 +210,7 @@ const ProductDetailPage = () => {
             <Separator className="my-6" />
             
             <div className="text-sm text-muted-foreground">
-              <p className="mb-2">Free shipping on orders over $100</p>
+              <p className="mb-2">Free shipping on orders over र100</p>
               <p className="mb-2">Easy 30-day returns</p>
               <p>Made with premium quality materials</p>
             </div>
