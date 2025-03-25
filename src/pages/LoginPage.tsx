@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import Layout from '@/components/layout/Layout';
@@ -8,9 +8,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from "sonner";
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const LoginPage = () => {
-  const { login } = useAuth();
+  const { login, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const redirectTo = location.state?.redirect || '/';
@@ -20,6 +21,14 @@ const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      toast.info('You are already logged in');
+      navigate('/account');
+    }
+  }, [user, navigate]);
 
   const validateForm = () => {
     const newErrors: { email?: string; password?: string } = {};
@@ -35,6 +44,9 @@ const LoginPage = () => {
 
     if (!password) {
       newErrors.password = 'Password is required';
+      isValid = false;
+    } else if (password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
       isValid = false;
     }
 
@@ -53,9 +65,9 @@ const LoginPage = () => {
     try {
       await login(email, password);
       toast.success('Successfully logged in');
-      navigate(redirectTo);
+      navigate('/account');
     } catch (error) {
-      toast.error('Login failed. Please check your credentials.');
+      toast.error('Invalid email or password. Please try again.');
     } finally {
       setIsLoading(false);
     }
