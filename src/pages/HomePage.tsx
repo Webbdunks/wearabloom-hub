@@ -113,8 +113,7 @@ const HomePage = () => {
               className="group relative h-80 overflow-hidden bg-secondary/20"
             >
               <img 
-                src="https://images.unsplash.com/photo-1509631179865-bde2c2the-20fe?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=988&q=80" 
-                alt="Accessories Collection" 
+                src="https://thehatcircle.com/cdn/shop/articles/image-from-rawpixel-id-1208113-jpeg_1024x.jpg?v=1613985777" 
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent flex items-end p-6">
