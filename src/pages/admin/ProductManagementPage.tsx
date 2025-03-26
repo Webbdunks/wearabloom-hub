@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Plus, Edit, Trash2, Loader2 } from 'lucide-react';
 import AdminLayout from '@/components/layout/AdminLayout';
@@ -24,6 +23,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Checkbox } from '@/components/ui/checkbox';
+import { Product } from '@/types';
 
 const ProductManagementPage = () => {
   const { products, addProduct, updateProduct, deleteProduct, isLoading } = useProducts();

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronLeft, Heart, Minus, Plus, ShoppingBag, Loader2 } from 'lucide-react';
@@ -17,6 +16,7 @@ import { useWishlist } from '@/context/WishlistContext';
 import ProductGrid from '@/components/products/ProductGrid';
 import { toast } from 'sonner';
 import { useProducts } from '@/context/ProductContext';
+import { Product } from '@/types';
 
 const ProductDetailPage = () => {
   const { id } = useParams<{ id: string }>();

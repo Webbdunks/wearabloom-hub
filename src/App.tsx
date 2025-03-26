@@ -16,7 +16,7 @@ import AdminLoginPage from "./pages/admin/AdminLoginPage";
 import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
 import ProductManagementPage from "./pages/admin/ProductManagementPage";
 import OrdersPage from "./pages/admin/OrdersPage";
-import ScrollToTop from "./components/layout/ScrollToTop";
+import { ScrollToTop } from "./components/layout/ScrollToTop";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";

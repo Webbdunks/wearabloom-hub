@@ -4,8 +4,8 @@ import { useSearchParams } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import ProductGrid from '@/components/products/ProductGrid';
 import { Input } from '@/components/ui/input';
-import { Search as SearchIcon } from 'lucide-react';
-import { products } from '@/data/products';
+import { Search as SearchIcon, Loader2 } from 'lucide-react';
+import { useProducts } from '@/context/ProductContext';
 import { Product } from '@/types';
 
 const SearchPage = () => {
@@ -13,6 +13,9 @@ const SearchPage = () => {
   const query = searchParams.get('q') || '';
   const [searchResults, setSearchResults] = useState<Product[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  
+  // Get products from context instead of importing directly
+  const { products, isLoading } = useProducts();
   
   // Handle search input changes
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -43,7 +46,18 @@ const SearchPage = () => {
     
     setSearchResults(results);
     setIsSearching(false);
-  }, [query]);
+  }, [query, products]);
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-16 flex justify-center items-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-2">Loading products...</span>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
