@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, Heart, Minus, Plus, ShoppingBag } from 'lucide-react';
+import { ChevronLeft, Heart, Minus, Plus, ShoppingBag, Loader2 } from 'lucide-react';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -12,52 +12,49 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select';
-import { getProductById } from '@/data/products';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
 import ProductGrid from '@/components/products/ProductGrid';
-import { getProductsByCategory } from '@/data/products';
 import { toast } from 'sonner';
+import { useProducts } from '@/context/ProductContext';
 
 const ProductDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { addItem } = useCart();
   const { addItem: addToWishlist, removeItem: removeFromWishlist, isInWishlist } = useWishlist();
+  const { products, isLoading } = useProducts();
   
-  const [product, setProduct] = useState(id ? getProductById(id) : undefined);
+  const [product, setProduct] = useState<Product | undefined>(undefined);
   const [selectedSize, setSelectedSize] = useState<string>('');
   const [quantity, setQuantity] = useState(1);
-  const [relatedProducts, setRelatedProducts] = useState([]);
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [isImageLoaded, setIsImageLoaded] = useState(false);
 
   const inWishlist = product ? isInWishlist(product.id) : false;
 
   useEffect(() => {
-    if (!product) {
-      // Product not found
-      if (id) {
-        const foundProduct = getProductById(id);
-        if (foundProduct) {
-          setProduct(foundProduct);
-          if (foundProduct.sizes.length > 0) {
-            setSelectedSize(foundProduct.sizes[0]);
-          }
-          
-          // Get related products (same category)
-          const related = getProductsByCategory(foundProduct.category)
-            .filter(p => p.id !== id)
-            .slice(0, 4);
-          setRelatedProducts(related);
-        } else {
-          // Product not found, redirect to products page
-          navigate('/products');
+    if (products.length > 0 && id) {
+      const foundProduct = products.find(p => p.id === id);
+      
+      if (foundProduct) {
+        setProduct(foundProduct);
+        if (foundProduct.sizes.length > 0) {
+          setSelectedSize(foundProduct.sizes[0]);
         }
+        
+        // Get related products (same category)
+        const related = products
+          .filter(p => p.category === foundProduct.category && p.id !== id)
+          .slice(0, 4);
+          
+        setRelatedProducts(related);
       } else {
+        // Product not found, redirect to products page
         navigate('/products');
       }
     }
-  }, [id, product, navigate]);
+  }, [id, products, navigate]);
 
   const handleAddToCart = () => {
     if (product) {
@@ -85,6 +82,17 @@ const ProductDetailPage = () => {
   const decrementQuantity = () => {
     setQuantity(prev => (prev > 1 ? prev - 1 : 1));
   };
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-16 flex justify-center items-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-2">Loading product details...</span>
+        </div>
+      </Layout>
+    );
+  }
 
   if (!product) {
     return null; // Or a loading spinner

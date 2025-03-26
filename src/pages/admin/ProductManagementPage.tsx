@@ -1,11 +1,11 @@
 
 import React, { useState } from 'react';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Loader2 } from 'lucide-react';
 import AdminLayout from '@/components/layout/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { toast } from 'sonner';
+import { Textarea } from '@/components/ui/textarea';
 import { 
   Dialog,
   DialogContent,
@@ -14,22 +14,19 @@ import {
   DialogFooter,
   DialogClose,
 } from '@/components/ui/dialog';
-import { products as initialProducts } from '@/data/products';
-
-type Product = {
-  id: string;
-  name: string;
-  price: number;
-  description: string;
-  image: string;
-  category: string;
-  featured?: boolean;
-  new?: boolean;
-  sizes: string[];
-};
+import { useProducts } from '@/context/ProductContext';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Checkbox } from '@/components/ui/checkbox';
 
 const ProductManagementPage = () => {
-  const [products, setProducts] = useState<Product[]>(initialProducts);
+  const { products, addProduct, updateProduct, deleteProduct, isLoading } = useProducts();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -38,13 +35,14 @@ const ProductManagementPage = () => {
   
   const handleOpenAddDialog = () => {
     setCurrentProduct({
-      id: crypto.randomUUID(),
       name: '',
       price: 0,
       description: '',
       image: '',
       category: '',
-      sizes: []
+      sizes: [],
+      featured: false,
+      new: false
     });
     setIsAddDialogOpen(true);
   };
@@ -79,38 +77,49 @@ const ProductManagementPage = () => {
       });
     }
   };
+
+  const handleCheckboxChange = (name: string, checked: boolean) => {
+    setCurrentProduct({
+      ...currentProduct,
+      [name]: checked
+    });
+  };
   
   const handleAddProduct = () => {
     if (!currentProduct.name || !currentProduct.price || !currentProduct.category) {
-      toast.error('Please fill in all required fields');
       return;
     }
     
-    setProducts([...products, currentProduct as Product]);
+    addProduct(currentProduct as Omit<Product, 'id'>);
     setIsAddDialogOpen(false);
-    toast.success('Product added successfully');
   };
   
   const handleEditProduct = () => {
-    if (!currentProduct.name || !currentProduct.price || !currentProduct.category) {
-      toast.error('Please fill in all required fields');
+    if (!currentProduct.id || !currentProduct.name || !currentProduct.price || !currentProduct.category) {
       return;
     }
     
-    setProducts(products.map(product => 
-      product.id === currentProduct.id ? currentProduct as Product : product
-    ));
+    updateProduct(currentProduct as Product);
     setIsEditDialogOpen(false);
-    toast.success('Product updated successfully');
   };
   
   const handleDeleteProduct = () => {
     if (!selectedProductId) return;
     
-    setProducts(products.filter(product => product.id !== selectedProductId));
+    deleteProduct(selectedProductId);
     setIsDeleteDialogOpen(false);
-    toast.success('Product deleted successfully');
   };
+  
+  if (isLoading) {
+    return (
+      <AdminLayout title="Product Management">
+        <div className="flex justify-center items-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-2">Loading products...</span>
+        </div>
+      </AdminLayout>
+    );
+  }
   
   return (
     <AdminLayout title="Product Management">
@@ -126,30 +135,30 @@ const ProductManagementPage = () => {
       
       {/* Products Table */}
       <div className="overflow-x-auto">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="border-b">
-              <th className="py-2 px-4 text-left">Image</th>
-              <th className="py-2 px-4 text-left">Name</th>
-              <th className="py-2 px-4 text-left">Price</th>
-              <th className="py-2 px-4 text-left">Category</th>
-              <th className="py-2 px-4 text-left">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Image</TableHead>
+              <TableHead>Name</TableHead>
+              <TableHead>Price</TableHead>
+              <TableHead>Category</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {products.map(product => (
-              <tr key={product.id} className="border-b hover:bg-gray-50">
-                <td className="py-2 px-4">
+              <TableRow key={product.id}>
+                <TableCell>
                   <img 
                     src={product.image} 
                     alt={product.name} 
                     className="w-16 h-16 object-cover rounded"
                   />
-                </td>
-                <td className="py-2 px-4">{product.name}</td>
-                <td className="py-2 px-4">र {product.price.toFixed(2)}</td>
-                <td className="py-2 px-4">{product.category}</td>
-                <td className="py-2 px-4">
+                </TableCell>
+                <TableCell>{product.name}</TableCell>
+                <TableCell>र {product.price.toFixed(2)}</TableCell>
+                <TableCell>{product.category}</TableCell>
+                <TableCell>
                   <div className="flex space-x-2">
                     <Button 
                       size="sm" 
@@ -166,11 +175,11 @@ const ProductManagementPage = () => {
                       <Trash2 size={16} />
                     </Button>
                   </div>
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
       
       {/* Add Product Dialog */}
@@ -221,7 +230,7 @@ const ProductManagementPage = () => {
               <Label htmlFor="description" className="text-right">
                 Description
               </Label>
-              <Input
+              <Textarea
                 id="description"
                 name="description"
                 className="col-span-3"
@@ -239,6 +248,7 @@ const ProductManagementPage = () => {
                 className="col-span-3"
                 value={currentProduct.image || ''}
                 onChange={handleInputChange}
+                placeholder="https://example.com/image.jpg"
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
@@ -253,6 +263,31 @@ const ProductManagementPage = () => {
                 onChange={handleInputChange}
                 placeholder="S, M, L, XL"
               />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <div className="text-right">Options</div>
+              <div className="col-span-3 space-y-2">
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="featured" 
+                    checked={currentProduct.featured || false}
+                    onCheckedChange={(checked) => 
+                      handleCheckboxChange('featured', checked as boolean)
+                    }
+                  />
+                  <Label htmlFor="featured">Featured Product</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="new" 
+                    checked={currentProduct.new || false}
+                    onCheckedChange={(checked) => 
+                      handleCheckboxChange('new', checked as boolean)
+                    }
+                  />
+                  <Label htmlFor="new">New Arrival</Label>
+                </div>
+              </div>
             </div>
           </div>
           <DialogFooter>
@@ -312,7 +347,7 @@ const ProductManagementPage = () => {
               <Label htmlFor="edit-description" className="text-right">
                 Description
               </Label>
-              <Input
+              <Textarea
                 id="edit-description"
                 name="description"
                 className="col-span-3"
@@ -344,6 +379,31 @@ const ProductManagementPage = () => {
                 onChange={handleInputChange}
                 placeholder="S, M, L, XL"
               />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <div className="text-right">Options</div>
+              <div className="col-span-3 space-y-2">
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="edit-featured" 
+                    checked={currentProduct.featured || false}
+                    onCheckedChange={(checked) => 
+                      handleCheckboxChange('featured', checked as boolean)
+                    }
+                  />
+                  <Label htmlFor="edit-featured">Featured Product</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="edit-new" 
+                    checked={currentProduct.new || false}
+                    onCheckedChange={(checked) => 
+                      handleCheckboxChange('new', checked as boolean)
+                    }
+                  />
+                  <Label htmlFor="edit-new">New Arrival</Label>
+                </div>
+              </div>
             </div>
           </div>
           <DialogFooter>

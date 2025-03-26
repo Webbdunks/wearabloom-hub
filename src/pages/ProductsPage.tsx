@@ -5,13 +5,8 @@ import Layout from '@/components/layout/Layout';
 import ProductGrid from '@/components/products/ProductGrid';
 import { Product } from '@/types';
 import { Input } from '@/components/ui/input';
-import { Search } from 'lucide-react';
+import { Search, Loader2 } from 'lucide-react';
 import { 
-  products, 
-  getProductsByCategory, 
-  getNewProducts 
-} from '@/data/products';
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -22,6 +17,7 @@ import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
+import { useProducts } from '@/context/ProductContext';
 
 const ProductsPage = () => {
   const { category } = useParams<{ category?: string }>();
@@ -31,6 +27,9 @@ const ProductsPage = () => {
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
+
+  // Get products from context instead of importing directly
+  const { products, isLoading } = useProducts();
 
   // All possible sizes from products
   const allSizes = Array.from(
@@ -42,9 +41,11 @@ const ProductsPage = () => {
     
     // Filter by category or show new arrivals
     if (category === 'new') {
-      filteredProducts = getNewProducts();
+      filteredProducts = products.filter(product => product.new);
     } else if (category) {
-      filteredProducts = getProductsByCategory(category);
+      filteredProducts = products.filter(
+        product => product.category.toLowerCase() === category.toLowerCase()
+      );
     } else {
       filteredProducts = [...products];
     }
@@ -96,7 +97,7 @@ const ProductsPage = () => {
     }
     
     setDisplayProducts(filteredProducts);
-  }, [category, sortOption, priceRange, selectedSizes, searchTerm]);
+  }, [category, sortOption, priceRange, selectedSizes, searchTerm, products]);
 
   const handleSizeChange = (size: string) => {
     setSelectedSizes(prev => {
@@ -118,6 +119,17 @@ const ProductsPage = () => {
   const categoryTitle = category 
     ? category.charAt(0).toUpperCase() + category.slice(1) 
     : "All Products";
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-16 flex justify-center items-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-2">Loading products...</span>
+        </div>
+      </Layout>
+    );
+  }
     
   return (
     <Layout>
