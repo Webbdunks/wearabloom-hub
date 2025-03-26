@@ -22,6 +22,12 @@ import CheckoutPage from "./pages/CheckoutPage";
 import OrderConfirmationPage from "./pages/OrderConfirmationPage";
 import NotFound from "./pages/NotFound";
 
+// Admin Pages
+import AdminLoginPage from "./pages/admin/AdminLoginPage";
+import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
+import ProductManagementPage from "./pages/admin/ProductManagementPage";
+import OrdersPage from "./pages/admin/OrdersPage";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -46,6 +52,13 @@ const App = () => (
                 <Route path="/account" element={<AccountPage />} />
                 <Route path="/checkout" element={<CheckoutPage />} />
                 <Route path="/order-confirmation" element={<OrderConfirmationPage />} />
+                
+                {/* Admin Routes */}
+                <Route path="/admin/login" element={<AdminLoginPage />} />
+                <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+                <Route path="/admin/products" element={<ProductManagementPage />} />
+                <Route path="/admin/orders" element={<OrdersPage />} />
+                
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>

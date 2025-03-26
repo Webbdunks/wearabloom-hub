@@ -1,34 +1,21 @@
 
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Eye, EyeOff } from 'lucide-react';
-import Layout from '@/components/layout/Layout';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Eye, EyeOff, ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useAuth } from '@/context/AuthContext';
 import { toast } from "sonner";
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import Layout from '@/components/layout/Layout';
 
-const LoginPage = () => {
-  const { login, user } = useAuth();
+const AdminLoginPage = () => {
   const navigate = useNavigate();
-  const location = useLocation();
-  const redirectTo = location.state?.redirect || '/';
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
-
-  // Redirect if already logged in
-  useEffect(() => {
-    if (user) {
-      toast.info('You are already logged in');
-      navigate('/account');
-    }
-  }, [user, navigate]);
 
   const validateForm = () => {
     const newErrors: { email?: string; password?: string } = {};
@@ -45,9 +32,6 @@ const LoginPage = () => {
     if (!password) {
       newErrors.password = 'Password is required';
       isValid = false;
-    } else if (password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
-      isValid = false;
     }
 
     setErrors(newErrors);
@@ -62,34 +46,40 @@ const LoginPage = () => {
     }
     
     setIsLoading(true);
-    try {
-      await login(email, password);
-      toast.success('Successfully logged in');
-      navigate('/account');
-    } catch (error) {
-      toast.error('Invalid email or password. Please try again.');
-    } finally {
-      setIsLoading(false);
+    
+    // For demo purposes, hardcoded admin credentials
+    if (email === 'admin@example.com' && password === 'admin123') {
+      // Set admin auth in localStorage
+      localStorage.setItem('adminAuth', JSON.stringify({ isAdmin: true, email }));
+      toast.success('Successfully logged in as admin');
+      navigate('/admin/dashboard');
+    } else {
+      toast.error('Invalid admin credentials');
     }
+    
+    setIsLoading(false);
   };
 
   return (
     <Layout>
       <div className="container max-w-md mx-auto px-4 py-16">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-light mb-2">Sign In</h1>
+          <div className="flex justify-center mb-3">
+            <ShieldAlert size={40} className="text-primary" />
+          </div>
+          <h1 className="text-3xl font-light mb-2">Admin Login</h1>
           <p className="text-muted-foreground">
-            Welcome back! Please sign in to your account.
+            Please enter your admin credentials to continue
           </p>
         </div>
         
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">Admin Email</Label>
             <Input
               id="email"
               type="email"
-              placeholder="you@example.com"
+              placeholder="admin@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={isLoading}
@@ -101,15 +91,7 @@ const LoginPage = () => {
           </div>
           
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="password">Password</Label>
-              <Link 
-                to="/forgot-password" 
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Forgot password?
-              </Link>
-            </div>
+            <Label htmlFor="password">Admin Password</Label>
             <div className="relative">
               <Input
                 id="password"
@@ -138,31 +120,21 @@ const LoginPage = () => {
             className="w-full" 
             disabled={isLoading}
           >
-            {isLoading ? 'Signing in...' : 'Sign In'}
+            {isLoading ? 'Signing in...' : 'Sign In as Admin'}
           </Button>
           
           <Button 
             type="button" 
             variant="outline"
             className="w-full mt-2" 
-            onClick={() => navigate('/admin/login')}
+            onClick={() => navigate('/login')}
           >
-            Login as Admin
+            Back to Customer Login
           </Button>
-          
-          <p className="text-center text-sm text-muted-foreground">
-            Don't have an account?{' '}
-            <Link 
-              to="/signup" 
-              className="text-foreground hover:underline"
-            >
-              Sign Up
-            </Link>
-          </p>
         </form>
       </div>
     </Layout>
   );
 };
 
-export default LoginPage;
+export default AdminLoginPage;
