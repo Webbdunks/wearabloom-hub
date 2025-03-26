@@ -15,21 +15,36 @@ type ProductContextType = {
 
 const ProductContext = createContext<ProductContextType | undefined>(undefined);
 
+// LocalStorage key for products
+const STORAGE_KEY = 'ecommerce_products';
+
 export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // In a real application, this would fetch from an API
+  // Load products from localStorage or use initial data
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        // Simulate API call
-        setTimeout(() => {
+        // Try to get products from localStorage first
+        const storedProducts = localStorage.getItem(STORAGE_KEY);
+        
+        if (storedProducts) {
+          // Use stored products if available
+          setProducts(JSON.parse(storedProducts));
+          console.log('Products loaded from localStorage');
+        } else {
+          // Initialize with default products if none in storage
           setProducts(initialProductsData);
-          setIsLoading(false);
-        }, 500);
+          // Save initial products to localStorage
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(initialProductsData));
+          console.log('Initial products saved to localStorage');
+        }
+        
+        setIsLoading(false);
       } catch (err) {
+        console.error('Error loading products:', err);
         setError('Failed to load products');
         setIsLoading(false);
       }
@@ -38,6 +53,14 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ child
     fetchProducts();
   }, []);
 
+  // Save products to localStorage whenever they change
+  useEffect(() => {
+    if (!isLoading && products.length > 0) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
+      console.log('Products saved to localStorage');
+    }
+  }, [products, isLoading]);
+
   const addProduct = (productData: Omit<Product, 'id'>) => {
     try {
       const newProduct: Product = {
@@ -45,7 +68,6 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ child
         id: crypto.randomUUID(),
       };
 
-      // In a real application, this would be an API call
       setProducts(prevProducts => [...prevProducts, newProduct]);
       toast.success('Product added successfully');
       return newProduct;
@@ -57,7 +79,6 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const updateProduct = (updatedProduct: Product) => {
     try {
-      // In a real application, this would be an API call
       setProducts(prevProducts =>
         prevProducts.map(product =>
           product.id === updatedProduct.id ? updatedProduct : product
@@ -72,7 +93,6 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const deleteProduct = (id: string) => {
     try {
-      // In a real application, this would be an API call
       setProducts(prevProducts => prevProducts.filter(product => product.id !== id));
       toast.success('Product deleted successfully');
     } catch (err) {

@@ -1,15 +1,29 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Layout from '@/components/layout/Layout';
 import ProductGrid from '@/components/products/ProductGrid';
-import { getFeaturedProducts, getNewProducts } from '@/data/products';
+import { useProducts } from '@/context/ProductContext';
 
 const HomePage = () => {
-  const featuredProducts = getFeaturedProducts();
-  const newProducts = getNewProducts();
+  const { products, isLoading } = useProducts();
+
+  // Filter featured and new products
+  const featuredProducts = products.filter(product => product.featured);
+  const newProducts = products.filter(product => product.new);
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="h-screen flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-2">Loading products...</span>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -63,7 +77,13 @@ const HomePage = () => {
           </Link>
         </div>
         
-        <ProductGrid products={featuredProducts} columns={3} />
+        {featuredProducts.length > 0 ? (
+          <ProductGrid products={featuredProducts} columns={3} />
+        ) : (
+          <div className="text-center py-10">
+            <p className="text-muted-foreground">No featured products available.</p>
+          </div>
+        )}
       </section>
 
       {/* Categories Banner */}
@@ -148,7 +168,13 @@ const HomePage = () => {
           </Link>
         </div>
         
-        <ProductGrid products={newProducts} columns={3} />
+        {newProducts.length > 0 ? (
+          <ProductGrid products={newProducts} columns={3} />
+        ) : (
+          <div className="text-center py-10">
+            <p className="text-muted-foreground">No new products available.</p>
+          </div>
+        )}
       </section>
 
       {/* Newsletter */}
