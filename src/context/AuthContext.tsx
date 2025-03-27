@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useContext, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -63,7 +64,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             
             const userData: User = {
               id: session.user.id,
-              email: session.user.email!,
+              email: profileData?.email || session.user.email!,
               name: profileData?.full_name || session.user.user_metadata?.full_name,
               profilePicture: profileData?.avatar_url,
               addresses: addresses
