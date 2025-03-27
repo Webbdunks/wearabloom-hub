@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -7,24 +7,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from "sonner";
 import Layout from '@/components/layout/Layout';
-import { useAuth } from '@/context/AuthContext';
 
 const AdminLoginPage = () => {
   const navigate = useNavigate();
-  const { login, user, isAdmin } = useAuth();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
-
-  // Check if user is already logged in and is admin
-  useEffect(() => {
-    if (user && isAdmin) {
-      navigate('/admin/dashboard');
-    }
-  }, [user, isAdmin, navigate]);
 
   const validateForm = () => {
     const newErrors: { email?: string; password?: string } = {};
@@ -56,17 +47,17 @@ const AdminLoginPage = () => {
     
     setIsLoading(true);
     
-    try {
-      await login(email, password);
-      
-      // We'll check if user is admin after login in useEffect
-      // This uses the same login as regular users, but checks admin status
-      
-    } catch (error: any) {
-      toast.error(`Login failed: ${error.message || 'Invalid credentials'}`);
-    } finally {
-      setIsLoading(false);
+    // For demo purposes, hardcoded admin credentials
+    if (email === 'admin@example.com' && password === 'admin123') {
+      // Set admin auth in localStorage
+      localStorage.setItem('adminAuth', JSON.stringify({ isAdmin: true, email }));
+      toast.success('Successfully logged in as admin');
+      navigate('/admin/dashboard');
+    } else {
+      toast.error('Invalid admin credentials');
     }
+    
+    setIsLoading(false);
   };
 
   return (
@@ -122,10 +113,6 @@ const AdminLoginPage = () => {
             {errors.password && (
               <p className="text-destructive text-sm">{errors.password}</p>
             )}
-          </div>
-          
-          <div className="text-sm text-muted-foreground mb-4">
-            <p>Note: The first user to sign up will be the admin.</p>
           </div>
           
           <Button 
