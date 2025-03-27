@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -33,7 +32,7 @@ type AuthContextType = {
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, name?: string) => Promise<void>;
   logout: () => void;
-  updateUserProfile: (userData: Partial<Omit<User, 'id' | 'email' | 'addresses'>>) => void;
+  updateUserProfile: (userData: Partial<Omit<NonNullable<User>, 'id' | 'email' | 'addresses'>>) => void;
   addAddress: (address: Omit<UserAddress, 'id'>) => void;
   updateAddress: (id: string, address: Partial<Omit<UserAddress, 'id'>>) => void;
   removeAddress: (id: string) => void;
@@ -46,14 +45,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         setIsLoading(true);
         
         if (session?.user) {
           try {
-            // Fetch user profile data
             const { data: profileData, error: profileError } = await supabase
               .from('profiles')
               .select('*')
@@ -62,8 +59,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               
             if (profileError) throw profileError;
             
-            // Fetch user addresses (in a real app)
-            // For now, we'll use empty array or mock data
             const addresses: UserAddress[] = [];
             
             const userData: User = {
@@ -87,10 +82,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     );
 
-    // Initial session check
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
-        // The onAuthStateChange handler will handle setting the user
       } else {
         setIsLoading(false);
       }
@@ -124,7 +117,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signup = async (email: string, password: string, name?: string) => {
     setIsLoading(true);
     try {
-      // Check if user already exists
       const { data: existingUser } = await supabase
         .from('profiles')
         .select('id')
@@ -168,7 +160,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const updateUserProfile = async (userData: Partial<Omit<User, 'id' | 'email' | 'addresses'>>) => {
+  const updateUserProfile = async (userData: Partial<Omit<NonNullable<User>, 'id' | 'email' | 'addresses'>>) => {
     if (user) {
       try {
         const { error } = await supabase
@@ -192,13 +184,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // These methods would need to be implemented with real database tables for addresses
-  // For now, they'll use the existing local storage approach
   const addAddress = (address: Omit<UserAddress, 'id'>) => {
     if (user) {
       const newAddress = { ...address, id: crypto.randomUUID() };
       
-      // If this is the first address or is marked default, make sure it's the only default
       const updatedAddresses = [...user.addresses];
       
       if (newAddress.isDefault) {
@@ -209,7 +198,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
       }
       
-      // If this is the first address of its type, make it default
       if (!updatedAddresses.some(addr => addr.type === newAddress.type)) {
         newAddress.isDefault = true;
       }
@@ -219,8 +207,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const updatedUser = { ...user, addresses: updatedAddresses };
       setUser(updatedUser);
       
-      // In a real implementation, we would save this to the database
-      // For now, we'll use localStorage to persist the data
       localStorage.setItem("user", JSON.stringify(updatedUser));
     }
   };
@@ -234,7 +220,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const updatedAddress = { ...updatedAddresses[index], ...addressUpdate };
         updatedAddresses[index] = updatedAddress;
         
-        // If setting this address as default, update other addresses of same type
         if (addressUpdate.isDefault) {
           updatedAddresses.forEach((addr, i) => {
             if (i !== index && addr.type === updatedAddress.type) {
@@ -246,7 +231,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const updatedUser = { ...user, addresses: updatedAddresses };
         setUser(updatedUser);
         
-        // In a real implementation, we would save this to the database
         localStorage.setItem("user", JSON.stringify(updatedUser));
       }
     }
@@ -258,7 +242,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const updatedUser = { ...user, addresses: filteredAddresses };
       setUser(updatedUser);
       
-      // In a real implementation, we would save this to the database
       localStorage.setItem("user", JSON.stringify(updatedUser));
     }
   };
