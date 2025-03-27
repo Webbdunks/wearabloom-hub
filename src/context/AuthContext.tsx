@@ -1,5 +1,7 @@
 
 import React, { createContext, useState, useContext, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 type UserAddress = {
   id: string;
@@ -44,53 +46,75 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check local storage for user data
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-    setIsLoading(false);
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setIsLoading(true);
+        
+        if (session?.user) {
+          try {
+            // Fetch user profile data
+            const { data: profileData, error: profileError } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', session.user.id)
+              .single();
+              
+            if (profileError) throw profileError;
+            
+            // Fetch user addresses (in a real app)
+            // For now, we'll use empty array or mock data
+            const addresses: UserAddress[] = [];
+            
+            const userData: User = {
+              id: session.user.id,
+              email: session.user.email!,
+              name: profileData?.full_name || session.user.user_metadata?.full_name,
+              profilePicture: profileData?.avatar_url,
+              addresses: addresses
+            };
+            
+            setUser(userData);
+          } catch (error) {
+            console.error("Error fetching user data:", error);
+            setUser(null);
+          }
+        } else {
+          setUser(null);
+        }
+        
+        setIsLoading(false);
+      }
+    );
+
+    // Initial session check
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        // The onAuthStateChange handler will handle setting the user
+      } else {
+        setIsLoading(false);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      // Simulate API call with a timeout
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // For demo purposes, let's check if email contains "@" and password length >= 6
-      if (!email.includes('@') || password.length < 6) {
-        throw new Error("Invalid credentials");
-      }
-      
-      // Mock successful login
-      const mockAddresses = [
-        {
-          id: crypto.randomUUID(),
-          fullName: "John Doe",
-          streetAddress: "123 Main St",
-          city: "Mumbai",
-          state: "Maharashtra",
-          postalCode: "400001",
-          country: "India",
-          phone: "+91 9876543210",
-          isDefault: true,
-          type: 'shipping' as const
-        }
-      ];
-      
-      const newUser = { 
-        id: crypto.randomUUID(), 
+      const { error } = await supabase.auth.signInWithPassword({
         email,
-        name: email.split('@')[0],
-        phone: "+91 9876543210",
-        addresses: mockAddresses
-      };
+        password
+      });
       
-      setUser(newUser);
-      localStorage.setItem("user", JSON.stringify(newUser));
-    } catch (error) {
+      if (error) throw error;
+      
+      toast.success('Successfully logged in');
+    } catch (error: any) {
       console.error("Login failed:", error);
+      toast.error(error.message || 'Invalid email or password. Please try again.');
       throw error;
     } finally {
       setIsLoading(false);
@@ -100,40 +124,76 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signup = async (email: string, password: string, name?: string) => {
     setIsLoading(true);
     try {
-      // Simulate API call with a timeout
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Check if user already exists
+      const { data: existingUser } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', email)
+        .maybeSingle();
+        
+      if (existingUser) {
+        throw new Error('A user with this email already exists');
+      }
       
-      // Mock successful signup
-      const newUser = { 
-        id: crypto.randomUUID(), 
+      const { error } = await supabase.auth.signUp({
         email,
-        name,
-        addresses: []
-      };
+        password,
+        options: {
+          data: {
+            full_name: name || email.split('@')[0],
+          },
+        }
+      });
       
-      setUser(newUser);
-      localStorage.setItem("user", JSON.stringify(newUser));
-    } catch (error) {
+      if (error) throw error;
+      
+      toast.success('Account created successfully. Please check your email for verification.');
+    } catch (error: any) {
       console.error("Signup failed:", error);
-      throw new Error("Signup failed. Please try again later.");
+      toast.error(error.message || 'Signup failed. Please try again later.');
+      throw error;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem("user");
-  };
-
-  const updateUserProfile = (userData: Partial<Omit<User, 'id' | 'email' | 'addresses'>>) => {
-    if (user) {
-      const updatedUser = { ...user, ...userData };
-      setUser(updatedUser);
-      localStorage.setItem("user", JSON.stringify(updatedUser));
+  const logout = async () => {
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+      toast.success('Successfully logged out');
+    } catch (error) {
+      console.error("Logout failed:", error);
+      toast.error('Logout failed. Please try again.');
     }
   };
 
+  const updateUserProfile = async (userData: Partial<Omit<User, 'id' | 'email' | 'addresses'>>) => {
+    if (user) {
+      try {
+        const { error } = await supabase
+          .from('profiles')
+          .update({
+            full_name: userData.name,
+            avatar_url: userData.profilePicture,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', user.id);
+          
+        if (error) throw error;
+        
+        const updatedUser = { ...user, ...userData };
+        setUser(updatedUser);
+        toast.success('Profile updated successfully');
+      } catch (error) {
+        console.error("Profile update failed:", error);
+        toast.error('Failed to update profile. Please try again.');
+      }
+    }
+  };
+
+  // These methods would need to be implemented with real database tables for addresses
+  // For now, they'll use the existing local storage approach
   const addAddress = (address: Omit<UserAddress, 'id'>) => {
     if (user) {
       const newAddress = { ...address, id: crypto.randomUUID() };
@@ -158,6 +218,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       const updatedUser = { ...user, addresses: updatedAddresses };
       setUser(updatedUser);
+      
+      // In a real implementation, we would save this to the database
+      // For now, we'll use localStorage to persist the data
       localStorage.setItem("user", JSON.stringify(updatedUser));
     }
   };
@@ -182,6 +245,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         const updatedUser = { ...user, addresses: updatedAddresses };
         setUser(updatedUser);
+        
+        // In a real implementation, we would save this to the database
         localStorage.setItem("user", JSON.stringify(updatedUser));
       }
     }
@@ -192,6 +257,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const filteredAddresses = user.addresses.filter(addr => addr.id !== id);
       const updatedUser = { ...user, addresses: filteredAddresses };
       setUser(updatedUser);
+      
+      // In a real implementation, we would save this to the database
       localStorage.setItem("user", JSON.stringify(updatedUser));
     }
   };

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
@@ -64,10 +63,9 @@ const LoginPage = () => {
     setIsLoading(true);
     try {
       await login(email, password);
-      toast.success('Successfully logged in');
       navigate('/account');
     } catch (error) {
-      toast.error('Invalid email or password. Please try again.');
+      // Error is already handled in the login function with toast
     } finally {
       setIsLoading(false);
     }

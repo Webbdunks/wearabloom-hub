@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import Layout from '@/components/layout/Layout';
@@ -8,9 +7,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from "sonner";
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const SignupPage = () => {
-  const { signup } = useAuth();
+  const { signup, user } = useAuth();
   const navigate = useNavigate();
   
   const [name, setName] = useState('');
@@ -26,6 +26,13 @@ const SignupPage = () => {
     password?: string;
     confirmPassword?: string;
   }>({});
+
+  useEffect(() => {
+    if (user) {
+      toast.info('You are already logged in');
+      navigate('/account');
+    }
+  }, [user, navigate]);
 
   const validateForm = () => {
     const newErrors: { 
@@ -79,10 +86,10 @@ const SignupPage = () => {
     setIsLoading(true);
     try {
       await signup(email, password, name);
-      toast.success('Account created successfully');
-      navigate('/');
-    } catch (error) {
-      toast.error('Failed to create account. Please try again.');
+      toast.success('Account created successfully. Please check your email for verification.');
+      navigate('/login');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to create account. Please try again.');
     } finally {
       setIsLoading(false);
     }
