@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from "sonner";
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const LoginPage = () => {
   const { login, user } = useAuth();
@@ -140,6 +141,15 @@ const LoginPage = () => {
             {isLoading ? 'Signing in...' : 'Sign In'}
           </Button>
           
+          <Button 
+            type="button" 
+            variant="outline"
+            className="w-full mt-2" 
+            onClick={() => navigate('/admin/login')}
+          >
+            Login as Admin
+          </Button>
+          
           <p className="text-center text-sm text-muted-foreground">
             Don't have an account?{' '}
             <Link 
@@ -149,15 +159,6 @@ const LoginPage = () => {
               Sign Up
             </Link>
           </p>
-          
-          <div className="text-center mt-4">
-            <Link 
-              to="/admin/login" 
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Admin Login
-            </Link>
-          </div>
         </form>
       </div>
     </Layout>
