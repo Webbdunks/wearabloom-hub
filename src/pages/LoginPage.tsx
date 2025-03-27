@@ -149,6 +149,15 @@ const LoginPage = () => {
               Sign Up
             </Link>
           </p>
+          
+          <div className="text-center mt-4">
+            <Link 
+              to="/admin/login" 
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Admin Login
+            </Link>
+          </div>
         </form>
       </div>
     </Layout>
