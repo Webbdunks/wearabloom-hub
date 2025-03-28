@@ -1,4 +1,3 @@
-
 export type Product = {
   id: string;
   name: string;
@@ -53,4 +52,17 @@ export type PaymentMethod = {
   id: string;
   type: 'card' | 'paypal';
   details: any;
+};
+
+export type UserAddress = {
+  id: string;
+  fullName: string;
+  streetAddress: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+  phone?: string;
+  isDefault?: boolean;
+  type: 'shipping' | 'billing';
 };

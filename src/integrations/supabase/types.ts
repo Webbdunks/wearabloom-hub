@@ -81,6 +81,54 @@ export type Database = {
         }
         Relationships: []
       }
+      user_addresses: {
+        Row: {
+          city: string
+          country: string
+          created_at: string
+          full_name: string
+          id: string
+          is_default: boolean | null
+          phone: string | null
+          postal_code: string
+          state: string
+          street_address: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          city: string
+          country: string
+          created_at?: string
+          full_name: string
+          id?: string
+          is_default?: boolean | null
+          phone?: string | null
+          postal_code: string
+          state: string
+          street_address: string
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          city?: string
+          country?: string
+          created_at?: string
+          full_name?: string
+          id?: string
+          is_default?: boolean | null
+          phone?: string | null
+          postal_code?: string
+          state?: string
+          street_address?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

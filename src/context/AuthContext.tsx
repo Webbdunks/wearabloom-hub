@@ -1,20 +1,7 @@
-
 import React, { createContext, useState, useContext, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-
-type UserAddress = {
-  id: string;
-  fullName: string;
-  streetAddress: string;
-  city: string;
-  state: string;
-  postalCode: string;
-  country: string;
-  phone?: string;
-  isDefault?: boolean;
-  type: 'shipping' | 'billing';
-};
+import { UserAddress } from "@/types";
 
 type User = {
   id: string;
@@ -66,6 +53,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Helper function to fetch user addresses
+  const fetchUserAddresses = async (userId: string) => {
+    try {
+      const { data: addressesData, error: addressesError } = await supabase
+        .from('user_addresses')
+        .select('*')
+        .eq('user_id', userId);
+        
+      if (addressesError) {
+        console.error("Error fetching addresses:", addressesError);
+        return [];
+      }
+      
+      // Transform from database format to our UserAddress type
+      return addressesData.map(addr => ({
+        id: addr.id,
+        fullName: addr.full_name,
+        streetAddress: addr.street_address,
+        city: addr.city,
+        state: addr.state,
+        postalCode: addr.postal_code,
+        country: addr.country,
+        phone: addr.phone,
+        isDefault: addr.is_default,
+        type: addr.type as 'shipping' | 'billing'
+      }));
+    } catch (error) {
+      console.error("Error in fetchUserAddresses:", error);
+      return [];
+    }
+  };
+
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -77,8 +96,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // Use setTimeout to avoid deadlocks with Supabase auth
           setTimeout(async () => {
             const profileData = await fetchUserProfile(session.user.id);
-            
-            const addresses: UserAddress[] = [];
+            const addresses = await fetchUserAddresses(session.user.id);
             
             const userData: User = {
               id: session.user.id,
@@ -104,8 +122,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
         const profileData = await fetchUserProfile(session.user.id);
-        
-        const addresses: UserAddress[] = [];
+        const addresses = await fetchUserAddresses(session.user.id);
         
         const userData: User = {
           id: session.user.id,
@@ -222,65 +239,178 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const addAddress = (address: Omit<UserAddress, 'id'>) => {
+  const addAddress = async (address: Omit<UserAddress, 'id'>) => {
     if (user) {
-      const newAddress = { ...address, id: crypto.randomUUID() };
-      
-      const updatedAddresses = [...user.addresses];
-      
-      if (newAddress.isDefault) {
-        updatedAddresses.forEach(addr => {
-          if (addr.type === newAddress.type) {
-            addr.isDefault = false;
-          }
-        });
-      }
-      
-      if (!updatedAddresses.some(addr => addr.type === newAddress.type)) {
-        newAddress.isDefault = true;
-      }
-      
-      updatedAddresses.push(newAddress);
-      
-      const updatedUser = { ...user, addresses: updatedAddresses };
-      setUser(updatedUser);
-      
-      localStorage.setItem("user", JSON.stringify(updatedUser));
-    }
-  };
+      try {
+        // Check if this should be the default address for its type
+        const existingDefault = user.addresses.some(addr => 
+          addr.type === address.type && addr.isDefault
+        );
 
-  const updateAddress = (id: string, addressUpdate: Partial<Omit<UserAddress, 'id'>>) => {
-    if (user) {
-      const updatedAddresses = [...user.addresses];
-      const index = updatedAddresses.findIndex(addr => addr.id === id);
-      
-      if (index !== -1) {
-        const updatedAddress = { ...updatedAddresses[index], ...addressUpdate };
-        updatedAddresses[index] = updatedAddress;
-        
-        if (addressUpdate.isDefault) {
-          updatedAddresses.forEach((addr, i) => {
-            if (i !== index && addr.type === updatedAddress.type) {
-              addr.isDefault = false;
+        const isDefault = address.isDefault ?? !existingDefault;
+
+        // Insert into database
+        const { data, error } = await supabase
+          .from('user_addresses')
+          .insert({
+            user_id: user.id,
+            full_name: address.fullName,
+            street_address: address.streetAddress,
+            city: address.city,
+            state: address.state,
+            postal_code: address.postalCode,
+            country: address.country,
+            phone: address.phone,
+            type: address.type,
+            is_default: isDefault
+          })
+          .select('*')
+          .single();
+
+        if (error) throw error;
+
+        // If this is set as default, update any other addresses of the same type
+        if (isDefault) {
+          await supabase
+            .from('user_addresses')
+            .update({ is_default: false })
+            .eq('user_id', user.id)
+            .eq('type', address.type)
+            .neq('id', data.id);
+          
+          // Update local state for other addresses
+          const updatedAddresses = user.addresses.map(addr => {
+            if (addr.type === address.type) {
+              return { ...addr, isDefault: false };
             }
+            return addr;
+          });
+          
+          // Add the new address to local state
+          const newAddress: UserAddress = {
+            id: data.id,
+            fullName: data.full_name,
+            streetAddress: data.street_address,
+            city: data.city,
+            state: data.state,
+            postalCode: data.postal_code,
+            country: data.country,
+            phone: data.phone,
+            isDefault: data.is_default,
+            type: data.type as 'shipping' | 'billing'
+          };
+          
+          setUser({
+            ...user,
+            addresses: [...updatedAddresses, newAddress]
+          });
+        } else {
+          // Just add the new address to local state
+          const newAddress: UserAddress = {
+            id: data.id,
+            fullName: data.full_name,
+            streetAddress: data.street_address,
+            city: data.city,
+            state: data.state,
+            postalCode: data.postal_code,
+            country: data.country,
+            phone: data.phone,
+            isDefault: data.is_default,
+            type: data.type as 'shipping' | 'billing'
+          };
+          
+          setUser({
+            ...user,
+            addresses: [...user.addresses, newAddress]
           });
         }
         
-        const updatedUser = { ...user, addresses: updatedAddresses };
-        setUser(updatedUser);
-        
-        localStorage.setItem("user", JSON.stringify(updatedUser));
+        toast.success('Address added successfully');
+      } catch (error) {
+        console.error("Error adding address:", error);
+        toast.error('Failed to add address. Please try again.');
       }
     }
   };
 
-  const removeAddress = (id: string) => {
+  const updateAddress = async (id: string, addressUpdate: Partial<Omit<UserAddress, 'id'>>) => {
     if (user) {
-      const filteredAddresses = user.addresses.filter(addr => addr.id !== id);
-      const updatedUser = { ...user, addresses: filteredAddresses };
-      setUser(updatedUser);
-      
-      localStorage.setItem("user", JSON.stringify(updatedUser));
+      try {
+        // Prepare the update data in snake_case for the database
+        const updateData: Record<string, any> = {};
+        
+        if (addressUpdate.fullName !== undefined) updateData.full_name = addressUpdate.fullName;
+        if (addressUpdate.streetAddress !== undefined) updateData.street_address = addressUpdate.streetAddress;
+        if (addressUpdate.city !== undefined) updateData.city = addressUpdate.city;
+        if (addressUpdate.state !== undefined) updateData.state = addressUpdate.state;
+        if (addressUpdate.postalCode !== undefined) updateData.postal_code = addressUpdate.postalCode;
+        if (addressUpdate.country !== undefined) updateData.country = addressUpdate.country;
+        if (addressUpdate.phone !== undefined) updateData.phone = addressUpdate.phone;
+        if (addressUpdate.type !== undefined) updateData.type = addressUpdate.type;
+        if (addressUpdate.isDefault !== undefined) updateData.is_default = addressUpdate.isDefault;
+        
+        updateData.updated_at = new Date().toISOString();
+        
+        // Update the address in the database
+        const { data, error } = await supabase
+          .from('user_addresses')
+          .update(updateData)
+          .eq('id', id)
+          .eq('user_id', user.id)
+          .select('*')
+          .single();
+          
+        if (error) throw error;
+        
+        // If this address is being set as default, update any other addresses of the same type
+        if (addressUpdate.isDefault) {
+          await supabase
+            .from('user_addresses')
+            .update({ is_default: false })
+            .eq('user_id', user.id)
+            .eq('type', data.type)
+            .neq('id', id);
+        }
+        
+        // Refresh the addresses to ensure we have the most up-to-date data
+        const addresses = await fetchUserAddresses(user.id);
+        
+        setUser({
+          ...user,
+          addresses: addresses
+        });
+        
+        toast.success('Address updated successfully');
+      } catch (error) {
+        console.error("Error updating address:", error);
+        toast.error('Failed to update address. Please try again.');
+      }
+    }
+  };
+
+  const removeAddress = async (id: string) => {
+    if (user) {
+      try {
+        // Delete the address from the database
+        const { error } = await supabase
+          .from('user_addresses')
+          .delete()
+          .eq('id', id)
+          .eq('user_id', user.id);
+          
+        if (error) throw error;
+        
+        // Update the local state by removing the deleted address
+        setUser({
+          ...user,
+          addresses: user.addresses.filter(addr => addr.id !== id)
+        });
+        
+        toast.success('Address removed successfully');
+      } catch (error) {
+        console.error("Error removing address:", error);
+        toast.error('Failed to remove address. Please try again.');
+      }
     }
   };
 
