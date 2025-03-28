@@ -31,7 +31,7 @@ type AuthContextType = {
   user: User;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, name?: string) => Promise<void>;
+  signup: (email: string, password: string, name?: string, phone?: string, gender?: string) => Promise<void>;
   logout: () => void;
   updateUserProfile: (userData: Partial<Omit<NonNullable<User>, 'id' | 'email' | 'addresses'>>) => void;
   addAddress: (address: Omit<UserAddress, 'id'>) => void;
@@ -84,6 +84,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               id: session.user.id,
               email: profileData?.email || session.user.email!,
               name: profileData?.full_name || session.user.user_metadata?.full_name,
+              phone: profileData?.phone,
+              gender: profileData?.gender as any,
               profilePicture: profileData?.avatar_url,
               addresses: addresses
             };
@@ -109,6 +111,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           id: session.user.id,
           email: profileData?.email || session.user.email!,
           name: profileData?.full_name || session.user.user_metadata?.full_name,
+          phone: profileData?.phone,
+          gender: profileData?.gender as any,
           profilePicture: profileData?.avatar_url,
           addresses: addresses
         };
@@ -144,7 +148,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signup = async (email: string, password: string, name?: string) => {
+  const signup = async (email: string, password: string, name?: string, phone?: string, gender?: string) => {
     setIsLoading(true);
     try {
       const { data: existingUser } = await supabase
@@ -163,6 +167,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         options: {
           data: {
             full_name: name || email.split('@')[0],
+            phone: phone,
+            gender: gender,
           },
         }
       });
@@ -198,6 +204,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           .update({
             full_name: userData.name,
             avatar_url: userData.profilePicture,
+            phone: userData.phone,
+            gender: userData.gender,
             updated_at: new Date().toISOString()
           })
           .eq('id', user.id);

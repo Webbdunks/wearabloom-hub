@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
@@ -8,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from "sonner";
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const SignupPage = () => {
   const { signup, user } = useAuth();
@@ -15,6 +17,8 @@ const SignupPage = () => {
   
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [gender, setGender] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -25,6 +29,7 @@ const SignupPage = () => {
     email?: string; 
     password?: string;
     confirmPassword?: string;
+    phone?: string;
   }>({});
 
   useEffect(() => {
@@ -40,6 +45,7 @@ const SignupPage = () => {
       email?: string; 
       password?: string;
       confirmPassword?: string;
+      phone?: string;
     } = {};
     let isValid = true;
 
@@ -53,6 +59,11 @@ const SignupPage = () => {
       isValid = false;
     } else if (!/\S+@\S+\.\S+/.test(email)) {
       newErrors.email = 'Email is invalid';
+      isValid = false;
+    }
+
+    if (phone && !/^\+?[0-9\s-()]{8,}$/.test(phone)) {
+      newErrors.phone = 'Please enter a valid phone number';
       isValid = false;
     }
 
@@ -85,7 +96,7 @@ const SignupPage = () => {
     
     setIsLoading(true);
     try {
-      await signup(email, password, name);
+      await signup(email, password, name, phone, gender);
       toast.success('Account created successfully. Please check your email for verification.');
       navigate('/login');
     } catch (error: any) {
@@ -136,6 +147,37 @@ const SignupPage = () => {
             {errors.email && (
               <p className="text-destructive text-sm">{errors.email}</p>
             )}
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="phone">Phone Number (optional)</Label>
+            <Input
+              id="phone"
+              type="tel"
+              placeholder="+1 (555) 123-4567"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              disabled={isLoading}
+              className={errors.phone ? 'border-destructive' : ''}
+            />
+            {errors.phone && (
+              <p className="text-destructive text-sm">{errors.phone}</p>
+            )}
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="gender">Gender (optional)</Label>
+            <Select value={gender} onValueChange={setGender}>
+              <SelectTrigger id="gender">
+                <SelectValue placeholder="Select gender" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="male">Male</SelectItem>
+                <SelectItem value="female">Female</SelectItem>
+                <SelectItem value="other">Other</SelectItem>
+                <SelectItem value="prefer-not-to-say">Prefer not to say</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           
           <div className="space-y-2">
