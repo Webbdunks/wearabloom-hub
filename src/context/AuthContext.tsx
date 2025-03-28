@@ -45,20 +45,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Helper function to fetch user profile data - moved outside the listener to avoid deadlocks
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+        
+      if (profileError) {
+        console.error("Error fetching profile:", profileError);
+        return null;
+      }
+      
+      return profileData;
+    } catch (error) {
+      console.error("Error in fetchUserProfile:", error);
+      return null;
+    }
+  };
+
   useEffect(() => {
+    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
+        console.log("Auth state changed:", event, session?.user?.id);
         setIsLoading(true);
         
         if (session?.user) {
-          try {
-            const { data: profileData, error: profileError } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', session.user.id)
-              .single();
-              
-            if (profileError) throw profileError;
+          // Use setTimeout to avoid deadlocks with Supabase auth
+          setTimeout(async () => {
+            const profileData = await fetchUserProfile(session.user.id);
             
             const addresses: UserAddress[] = [];
             
@@ -71,23 +89,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             };
             
             setUser(userData);
-          } catch (error) {
-            console.error("Error fetching user data:", error);
-            setUser(null);
-          }
+            setIsLoading(false);
+          }, 0);
         } else {
           setUser(null);
+          setIsLoading(false);
         }
-        
-        setIsLoading(false);
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // THEN check for existing session
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
-      } else {
-        setIsLoading(false);
+        const profileData = await fetchUserProfile(session.user.id);
+        
+        const addresses: UserAddress[] = [];
+        
+        const userData: User = {
+          id: session.user.id,
+          email: profileData?.email || session.user.email!,
+          name: profileData?.full_name || session.user.user_metadata?.full_name,
+          profilePicture: profileData?.avatar_url,
+          addresses: addresses
+        };
+        
+        setUser(userData);
       }
+      
+      setIsLoading(false);
     });
 
     return () => {
