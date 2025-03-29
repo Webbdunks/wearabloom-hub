@@ -37,6 +37,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Helper function to check if user is admin
   const checkIsAdmin = async (userId: string): Promise<boolean> => {
     try {
+      // Special case for our hardcoded admin
+      const { data: userData } = await supabase.auth.getUser();
+      if (userData?.user?.email === 'casandra@gmail.com') {
+        return true;
+      }
+      
+      // Otherwise check the admin_users table
       const { data, error } = await supabase
         .rpc('is_admin', { user_id: userId });
         
@@ -179,16 +186,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (error) throw error;
       
-      // Check if the user is an admin
-      const { data: session } = await supabase.auth.getSession();
-      let isAdmin = false;
+      // Special case for our hardcoded admin
+      const isAdmin = email === 'casandra@gmail.com';
       
-      if (session && session.session) {
-        isAdmin = await checkIsAdmin(session.session.user.id);
+      // If not the special admin, check the database
+      if (!isAdmin) {
+        const { data: session } = await supabase.auth.getSession();
+        if (session && session.session) {
+          const dbAdminCheck = await checkIsAdmin(session.session.user.id);
+          if (dbAdminCheck) {
+            toast.success('Successfully logged in as admin');
+            return { isAdmin: true };
+          }
+        }
+      } else {
+        toast.success('Successfully logged in as admin');
+        return { isAdmin: true };
       }
       
       toast.success('Successfully logged in');
-      return { isAdmin };
+      return { isAdmin: false };
     } catch (error: any) {
       console.error("Login failed:", error);
       toast.error(error.message || 'Invalid email or password. Please try again.');
