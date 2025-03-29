@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Product } from '@/types';
 import { supabase } from '@/lib/supabaseClient';
+import { v4 as uuidv4 } from 'uuid';
 
 const ProductManagementPage = () => {
   const { products, setProducts, isLoading } = useProducts();
@@ -25,7 +26,7 @@ const ProductManagementPage = () => {
       setCurrentProduct(product);
       setIsEditing(true);
     } else {
-      setCurrentProduct({ name: '', price: 0, description: '', image: '', category: '', sizes: [], featured: false, new: false });
+      setCurrentProduct({ id: uuidv4(), name: '', price: 0, description: '', image: '', category: '', sizes: [], featured: false, new: false });
       setIsEditing(false);
     }
     setIsDialogOpen(true);
@@ -49,9 +50,13 @@ const ProductManagementPage = () => {
     if (!currentProduct.name || !currentProduct.price || !currentProduct.category) return;
 
     if (isEditing && currentProduct.id) {
+      if (!/^[0-9a-fA-F-]{36}$/.test(currentProduct.id)) {
+        console.error('Invalid UUID for product update');
+        return;
+      }
       const { data, error } = await supabase.from('products').update(currentProduct).eq('id', currentProduct.id);
       if (error) return console.error(error);
-      setProducts((prev) => prev.map((p) => (p.id === data[0].id ? data[0] : p)));
+      setProducts((prev) => prev.map((p) => (p.id === currentProduct.id ? data[0] : p)));
     } else {
       const { data, error } = await supabase.from('products').insert([currentProduct]);
       if (error) return console.error(error);
@@ -115,12 +120,6 @@ const ProductManagementPage = () => {
           <Input name="image" value={currentProduct.image || ''} onChange={handleInputChange} placeholder="Image URL" />
           <Checkbox checked={currentProduct.featured || false} onCheckedChange={(checked) => handleCheckboxChange('featured', checked as boolean)} /> Featured
           <DialogFooter><DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose><Button onClick={saveProduct}>{isEditing ? 'Update' : 'Add'} Product</Button></DialogFooter>
-        </DialogContent>
-      </Dialog>
-      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent><DialogHeader><DialogTitle>Confirm Delete</DialogTitle></DialogHeader>
-          <p>Are you sure you want to delete this product? This action cannot be undone.</p>
-          <DialogFooter><DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose><Button variant="destructive" onClick={deleteProduct}>Delete</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </AdminLayout>
