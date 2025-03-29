@@ -8,8 +8,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from "sonner";
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { supabase } from '@/integrations/supabase/client';
 
 const LoginPage = () => {
   const { login, user } = useAuth();
@@ -26,8 +24,13 @@ const LoginPage = () => {
   // Redirect if already logged in
   useEffect(() => {
     if (user) {
-      toast.info('You are already logged in');
-      navigate('/account');
+      if (user.isAdmin) {
+        toast.info('You are already logged in as admin');
+        navigate('/admin/dashboard');
+      } else {
+        toast.info('You are already logged in');
+        navigate('/account');
+      }
     }
   }, [user, navigate]);
 
@@ -64,26 +67,19 @@ const LoginPage = () => {
     
     setIsLoading(true);
     try {
-      await login(email, password);
+      const { isAdmin } = await login(email, password);
       
-      // Check if user is admin
-      const { data: session } = await supabase.auth.getSession();
-      if (session && session.session) {
-        const { data: adminData, error: adminError } = await supabase
-          .rpc('is_admin', { user_id: session.session.user.id });
-          
-        if (!adminError && adminData) {
-          // User is an admin, redirect to admin dashboard
-          navigate('/admin/dashboard');
-          toast.success('Welcome back, admin!');
-        } else {
-          // Regular user, redirect to account page
-          navigate('/account');
-        }
+      if (isAdmin) {
+        // User is an admin, redirect to admin dashboard
+        navigate('/admin/dashboard');
+        toast.success('Welcome back, admin!');
+      } else {
+        // Regular user, redirect to account page or the page they were trying to access
+        navigate(redirectTo);
+        toast.success('Successfully logged in');
       }
     } catch (error) {
       // Error is already handled in the login function with toast
-    } finally {
       setIsLoading(false);
     }
   };

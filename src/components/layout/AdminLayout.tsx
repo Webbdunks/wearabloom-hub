@@ -4,7 +4,6 @@ import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { ShieldAlert, LogOut, Package, ClipboardList, LayoutDashboard, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 
 interface AdminLayoutProps {
@@ -17,45 +16,24 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
   const location = useLocation();
   const { user, logout } = useAuth();
   const [activeMenu, setActiveMenu] = useState('');
-  const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
-    const checkAdminStatus = async () => {
-      setIsLoading(true);
-      
-      // First check if user is logged in
-      if (!user) {
-        toast.error('Please log in to access admin area');
-        navigate('/login');
-        return;
-      }
-      
-      try {
-        // Check if user is admin using the RPC function
-        const { data, error } = await supabase
-          .rpc('is_admin', { user_id: user.id });
-          
-        if (error) throw error;
-        
-        if (!data) {
-          // User is not an admin
-          toast.error('You do not have admin permissions');
-          navigate('/');
-          return;
-        }
-        
-        setIsAdmin(true);
-      } catch (error) {
-        console.error('Admin check error:', error);
-        toast.error('Error checking admin permissions');
-        navigate('/');
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    // First check if user is logged in
+    if (!user) {
+      toast.error('Please log in to access admin area');
+      navigate('/login', { state: { redirect: location.pathname } });
+      return;
+    }
     
-    checkAdminStatus();
+    // Then check if user is admin
+    if (!user.isAdmin) {
+      toast.error('You do not have admin permissions');
+      navigate('/');
+      return;
+    }
+    
+    setIsLoading(false);
     
     // Set active menu based on current path
     const path = location.pathname;
@@ -79,10 +57,6 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
         <p>Checking admin permissions...</p>
       </div>
     );
-  }
-  
-  if (!isAdmin) {
-    return null; // Will redirect in the useEffect
   }
   
   return (

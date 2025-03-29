@@ -12,18 +12,20 @@ type User = {
   gender?: 'male' | 'female' | 'other' | 'prefer-not-to-say';
   profilePicture?: string;
   addresses: UserAddress[];
+  isAdmin?: boolean;
 } | null;
 
 type AuthContextType = {
   user: User;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<{ isAdmin: boolean }>;
   signup: (email: string, password: string, name?: string, phone?: string, gender?: string) => Promise<void>;
   logout: () => void;
-  updateUserProfile: (userData: Partial<Omit<NonNullable<User>, 'id' | 'email' | 'addresses'>>) => void;
+  updateUserProfile: (userData: Partial<Omit<NonNullable<User>, 'id' | 'email' | 'addresses' | 'isAdmin'>>) => void;
   addAddress: (address: Omit<UserAddress, 'id'>) => void;
   updateAddress: (id: string, address: Partial<Omit<UserAddress, 'id'>>) => void;
   removeAddress: (id: string) => void;
+  checkIsAdmin: (userId: string) => Promise<boolean>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -31,6 +33,24 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Helper function to check if user is admin
+  const checkIsAdmin = async (userId: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase
+        .rpc('is_admin', { user_id: userId });
+        
+      if (error) {
+        console.error("Error checking admin status:", error);
+        return false;
+      }
+      
+      return !!data;
+    } catch (error) {
+      console.error("Error in checkIsAdmin:", error);
+      return false;
+    }
+  };
 
   // Helper function to fetch user profile data - moved outside the listener to avoid deadlocks
   const fetchUserProfile = async (userId: string) => {
@@ -88,7 +108,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         console.log("Auth state changed:", event, session?.user?.id);
         setIsLoading(true);
         
@@ -97,6 +117,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setTimeout(async () => {
             const profileData = await fetchUserProfile(session.user.id);
             const addresses = await fetchUserAddresses(session.user.id);
+            const isAdmin = await checkIsAdmin(session.user.id);
             
             const userData: User = {
               id: session.user.id,
@@ -105,7 +126,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               phone: profileData?.phone,
               gender: profileData?.gender as any,
               profilePicture: profileData?.avatar_url,
-              addresses: addresses
+              addresses: addresses,
+              isAdmin: isAdmin
             };
             
             setUser(userData);
@@ -123,6 +145,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (session?.user) {
         const profileData = await fetchUserProfile(session.user.id);
         const addresses = await fetchUserAddresses(session.user.id);
+        const isAdmin = await checkIsAdmin(session.user.id);
         
         const userData: User = {
           id: session.user.id,
@@ -131,7 +154,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           phone: profileData?.phone,
           gender: profileData?.gender as any,
           profilePicture: profileData?.avatar_url,
-          addresses: addresses
+          addresses: addresses,
+          isAdmin: isAdmin
         };
         
         setUser(userData);
@@ -155,7 +179,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (error) throw error;
       
+      // Check if the user is an admin
+      const { data: session } = await supabase.auth.getSession();
+      let isAdmin = false;
+      
+      if (session && session.session) {
+        isAdmin = await checkIsAdmin(session.session.user.id);
+      }
+      
       toast.success('Successfully logged in');
+      return { isAdmin };
     } catch (error: any) {
       console.error("Login failed:", error);
       toast.error(error.message || 'Invalid email or password. Please try again.');
@@ -213,7 +246,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const updateUserProfile = async (userData: Partial<Omit<NonNullable<User>, 'id' | 'email' | 'addresses'>>) => {
+  const updateUserProfile = async (userData: Partial<Omit<NonNullable<User>, 'id' | 'email' | 'addresses' | 'isAdmin'>>) => {
     if (user) {
       try {
         const { error } = await supabase
@@ -424,7 +457,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       updateUserProfile,
       addAddress,
       updateAddress,
-      removeAddress
+      removeAddress,
+      checkIsAdmin
     }}>
       {children}
     </AuthContext.Provider>

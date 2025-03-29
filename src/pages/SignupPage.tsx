@@ -8,7 +8,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from "sonner";
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const SignupPage = () => {
@@ -35,7 +34,11 @@ const SignupPage = () => {
   useEffect(() => {
     if (user) {
       toast.info('You are already logged in');
-      navigate('/account');
+      if (user.isAdmin) {
+        navigate('/admin/dashboard');
+      } else {
+        navigate('/account');
+      }
     }
   }, [user, navigate]);
 
