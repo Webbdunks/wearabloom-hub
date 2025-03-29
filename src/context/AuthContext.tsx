@@ -19,7 +19,7 @@ type AuthContextType = {
   user: User;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<{ isAdmin: boolean }>;
-  signup: (email: string, password: string, name?: string, phone?: string, gender?: string) => Promise<void>;
+  signup: (email: string, password: string, name?: string, phone?: string, gender?: string, isAdmin?: boolean) => Promise<void>;
   logout: () => void;
   updateUserProfile: (userData: Partial<Omit<NonNullable<User>, 'id' | 'email' | 'addresses' | 'isAdmin'>>) => void;
   addAddress: (address: Omit<UserAddress, 'id'>) => void;
@@ -198,7 +198,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signup = async (email: string, password: string, name?: string, phone?: string, gender?: string) => {
+  const signup = async (email: string, password: string, name?: string, phone?: string, gender?: string, isAdmin?: boolean) => {
     setIsLoading(true);
     try {
       const { data: existingUser } = await supabase
@@ -211,7 +211,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('A user with this email already exists');
       }
       
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -219,11 +219,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             full_name: name || email.split('@')[0],
             phone: phone,
             gender: gender,
+            is_admin: isAdmin || false,
           },
         }
       });
       
       if (error) throw error;
+      
+      // If this signup is for an admin, add to admin_users table
+      if (isAdmin && data.user) {
+        const { error: adminError } = await supabase
+          .from('admin_users')
+          .insert([
+            { user_id: data.user.id }
+          ]);
+          
+        if (adminError) {
+          console.error("Error adding user to admin_users:", adminError);
+          // Continue registration even if admin role assignment fails
+          // User can be manually assigned admin role later
+        }
+      }
       
       toast.success('Account created successfully. Please check your email for verification.');
     } catch (error: any) {

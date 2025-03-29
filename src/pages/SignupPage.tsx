@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const SignupPage = () => {
   const { signup, user } = useAuth();
@@ -23,6 +24,8 @@ const SignupPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [role, setRole] = useState('user');
+  const [showAdminWarning, setShowAdminWarning] = useState(false);
   const [errors, setErrors] = useState<{ 
     name?: string; 
     email?: string; 
@@ -41,6 +44,11 @@ const SignupPage = () => {
       }
     }
   }, [user, navigate]);
+
+  // Show warning when admin role is selected
+  useEffect(() => {
+    setShowAdminWarning(role === 'admin');
+  }, [role]);
 
   const validateForm = () => {
     const newErrors: { 
@@ -99,9 +107,16 @@ const SignupPage = () => {
     
     setIsLoading(true);
     try {
-      await signup(email, password, name, phone, gender);
+      const isAdmin = role === 'admin';
+      await signup(email, password, name, phone, gender, isAdmin);
       toast.success('Account created successfully. Please check your email for verification.');
-      navigate('/login');
+      
+      // Redirect based on role
+      if (isAdmin) {
+        navigate('/admin/dashboard');
+      } else {
+        navigate('/account');
+      }
     } catch (error: any) {
       toast.error(error.message || 'Failed to create account. Please try again.');
     } finally {
@@ -182,6 +197,28 @@ const SignupPage = () => {
               </SelectContent>
             </Select>
           </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="role">Account Type</Label>
+            <Select value={role} onValueChange={setRole}>
+              <SelectTrigger id="role">
+                <SelectValue placeholder="Select role" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="user">Customer</SelectItem>
+                <SelectItem value="admin">Admin</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          {showAdminWarning && (
+            <Alert variant="destructive" className="bg-yellow-50 border-yellow-500 text-yellow-800">
+              <AlertDescription>
+                Warning: Only authorized personnel should create Admin accounts. 
+                Admin accounts have full access to manage products, orders, and user data.
+              </AlertDescription>
+            </Alert>
+          )}
           
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
