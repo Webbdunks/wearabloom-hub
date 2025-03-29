@@ -12,7 +12,6 @@ import AccountPage from "./pages/AccountPage";
 import WishlistPage from "./pages/WishlistPage";
 import SearchPage from "./pages/SearchPage";
 import NotFound from "./pages/NotFound";
-import AdminLoginPage from "./pages/admin/AdminLoginPage";
 import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
 import ProductManagementPage from "./pages/admin/ProductManagementPage";
 import OrdersPage from "./pages/admin/OrdersPage";
@@ -44,7 +43,6 @@ function App() {
                 <Route path="/account" element={<AccountPage />} />
                 <Route path="/wishlist" element={<WishlistPage />} />
                 <Route path="/search" element={<SearchPage />} />
-                <Route path="/admin/login" element={<AdminLoginPage />} />
                 <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
                 <Route path="/admin/products" element={<ProductManagementPage />} />
                 <Route path="/admin/orders" element={<OrdersPage />} />

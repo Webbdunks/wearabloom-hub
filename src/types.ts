@@ -1,3 +1,4 @@
+
 export type Product = {
   id: string;
   name: string;
@@ -66,3 +67,5 @@ export type UserAddress = {
   isDefault?: boolean;
   type: 'shipping' | 'billing';
 };
+
+export type UserRole = 'user' | 'admin';

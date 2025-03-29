@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { ShoppingCart, User, Menu, X, Search, Heart } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { ShoppingCart, User, Menu, X, Search, Heart, ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
@@ -11,8 +11,10 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 
 const Header = () => {
   const { user, logout } = useAuth();
@@ -20,7 +22,9 @@ const Header = () => {
   const { totalItems: wishlistTotalItems } = useWishlist();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -31,10 +35,37 @@ const Header = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Check if user is admin
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (user) {
+        try {
+          const { data, error } = await supabase
+            .rpc('is_admin', { user_id: user.id });
+            
+          if (!error && data) {
+            setIsAdmin(true);
+          }
+        } catch (error) {
+          console.error('Error checking admin status:', error);
+        }
+      } else {
+        setIsAdmin(false);
+      }
+    };
+    
+    checkAdminStatus();
+  }, [user]);
+
   // Close mobile menu when changing routes
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [location]);
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
 
   return (
     <header 
@@ -95,7 +126,21 @@ const Header = () => {
                   <DropdownMenuItem asChild>
                     <Link to="/orders" className="w-full cursor-pointer">Orders</Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={logout} className="cursor-pointer">
+                  
+                  {isAdmin && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
+                        <Link to="/admin/dashboard" className="w-full cursor-pointer flex items-center">
+                          <ShieldAlert className="h-4 w-4 mr-2" />
+                          Admin Dashboard
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                  
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
                     Sign Out
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -191,6 +236,18 @@ const Header = () => {
               >
                 Wishlist
               </Link>
+              
+              {isAdmin && (
+                <Link 
+                  to="/admin/dashboard" 
+                  className="text-xl font-medium flex items-center"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <ShieldAlert className="h-5 w-5 mr-2" />
+                  Admin Dashboard
+                </Link>
+              )}
+              
               {!user && (
                 <>
                   <Link 

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
@@ -8,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from "sonner";
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { supabase } from '@/integrations/supabase/client';
 
 const LoginPage = () => {
   const { login, user } = useAuth();
@@ -63,7 +65,22 @@ const LoginPage = () => {
     setIsLoading(true);
     try {
       await login(email, password);
-      navigate('/account');
+      
+      // Check if user is admin
+      const { data: session } = await supabase.auth.getSession();
+      if (session && session.session) {
+        const { data: adminData, error: adminError } = await supabase
+          .rpc('is_admin', { user_id: session.session.user.id });
+          
+        if (!adminError && adminData) {
+          // User is an admin, redirect to admin dashboard
+          navigate('/admin/dashboard');
+          toast.success('Welcome back, admin!');
+        } else {
+          // Regular user, redirect to account page
+          navigate('/account');
+        }
+      }
     } catch (error) {
       // Error is already handled in the login function with toast
     } finally {
@@ -137,15 +154,6 @@ const LoginPage = () => {
             disabled={isLoading}
           >
             {isLoading ? 'Signing in...' : 'Sign In'}
-          </Button>
-          
-          <Button 
-            type="button" 
-            variant="outline"
-            className="w-full mt-2" 
-            onClick={() => navigate('/admin/login')}
-          >
-            Login as Admin
           </Button>
           
           <p className="text-center text-sm text-muted-foreground">
