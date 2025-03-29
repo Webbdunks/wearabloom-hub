@@ -26,13 +26,18 @@ const SignupPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [role, setRole] = useState('user');
   const [showAdminWarning, setShowAdminWarning] = useState(false);
+  const [adminCode, setAdminCode] = useState('');
   const [errors, setErrors] = useState<{ 
     name?: string; 
     email?: string; 
     password?: string;
     confirmPassword?: string;
     phone?: string;
+    adminCode?: string;
   }>({});
+
+  // The secret admin code - in a real app, this would be handled more securely
+  const ADMIN_SECRET_CODE = "admin123"; // This is just for demo purposes
 
   useEffect(() => {
     if (user) {
@@ -45,7 +50,7 @@ const SignupPage = () => {
     }
   }, [user, navigate]);
 
-  // Show warning when admin role is selected
+  // Show warning and admin code field when admin role is selected
   useEffect(() => {
     setShowAdminWarning(role === 'admin');
   }, [role]);
@@ -57,6 +62,7 @@ const SignupPage = () => {
       password?: string;
       confirmPassword?: string;
       phone?: string;
+      adminCode?: string;
     } = {};
     let isValid = true;
 
@@ -94,6 +100,17 @@ const SignupPage = () => {
       isValid = false;
     }
 
+    // Validate admin code if admin role is selected
+    if (role === 'admin') {
+      if (!adminCode) {
+        newErrors.adminCode = 'Admin code is required';
+        isValid = false;
+      } else if (adminCode !== ADMIN_SECRET_CODE) {
+        newErrors.adminCode = 'Invalid admin code';
+        isValid = false;
+      }
+    }
+
     setErrors(newErrors);
     return isValid;
   };
@@ -107,7 +124,7 @@ const SignupPage = () => {
     
     setIsLoading(true);
     try {
-      const isAdmin = role === 'admin';
+      const isAdmin = role === 'admin' && adminCode === ADMIN_SECRET_CODE;
       await signup(email, password, name, phone, gender, isAdmin);
       toast.success('Account created successfully. Please check your email for verification.');
       
@@ -212,12 +229,31 @@ const SignupPage = () => {
           </div>
           
           {showAdminWarning && (
-            <Alert variant="destructive" className="bg-yellow-50 border-yellow-500 text-yellow-800">
-              <AlertDescription>
-                Warning: Only authorized personnel should create Admin accounts. 
-                Admin accounts have full access to manage products, orders, and user data.
-              </AlertDescription>
-            </Alert>
+            <>
+              <Alert variant="destructive" className="bg-yellow-50 border-yellow-500 text-yellow-800">
+                <AlertDescription>
+                  Warning: Only authorized personnel should create Admin accounts. 
+                  Admin accounts have full access to manage products, orders, and user data.
+                  Please enter the admin authorization code to continue.
+                </AlertDescription>
+              </Alert>
+              
+              <div className="space-y-2">
+                <Label htmlFor="adminCode">Admin Authorization Code</Label>
+                <Input
+                  id="adminCode"
+                  type="password"
+                  placeholder="Enter admin code"
+                  value={adminCode}
+                  onChange={(e) => setAdminCode(e.target.value)}
+                  disabled={isLoading}
+                  className={errors.adminCode ? 'border-destructive' : ''}
+                />
+                {errors.adminCode && (
+                  <p className="text-destructive text-sm">{errors.adminCode}</p>
+                )}
+              </div>
+            </>
           )}
           
           <div className="space-y-2">
