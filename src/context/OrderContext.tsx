@@ -73,9 +73,9 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         userId: data[0].user_id,
         customerName: data[0].customer_name,
         email: data[0].email,
-        items: data[0].items,
-        status: data[0].status,
-        shippingAddress: data[0].shipping_address,
+        items: data[0].items as Order['items'],
+        status: data[0].status as OrderStatus,
+        shippingAddress: data[0].shipping_address as Order['shippingAddress'],
         total: data[0].total,
         createdAt: data[0].created_at
       };
@@ -145,9 +145,9 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         userId: item.user_id,
         customerName: item.customer_name,
         email: item.email,
-        items: item.items,
+        items: item.items as Order['items'],
         status: item.status as OrderStatus,
-        shippingAddress: item.shipping_address,
+        shippingAddress: item.shipping_address as Order['shippingAddress'],
         total: item.total,
         createdAt: item.created_at
       }));
@@ -185,9 +185,9 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         userId: item.user_id,
         customerName: item.customer_name,
         email: item.email,
-        items: item.items,
+        items: item.items as Order['items'],
         status: item.status as OrderStatus,
-        shippingAddress: item.shipping_address,
+        shippingAddress: item.shipping_address as Order['shippingAddress'],
         total: item.total,
         createdAt: item.created_at
       }));

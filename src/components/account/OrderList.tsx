@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Package, ArrowRight, Clock, Check, Truck } from 'lucide-react';
+import { Package, ArrowRight, Clock, Check, Truck, XCircle } from 'lucide-react';
 import { useOrders } from '@/context/OrderContext';
 import { useAuth } from '@/context/AuthContext';
 import { Order } from '@/types';
@@ -61,7 +61,7 @@ const OrderList = () => {
       case 'cancelled':
         return (
           <Badge variant="outline" className="flex items-center gap-1 bg-red-50 text-red-700 border-red-200">
-            <Check size={12} />
+            <XCircle size={12} />
             Cancelled
           </Badge>
         );

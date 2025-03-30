@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Eye, XCircle, CheckCircle2, Clock, Loader2 } from 'lucide-react';
+import { Eye, XCircle, CheckCircle2, Clock, Loader2, Truck } from 'lucide-react';
 import AdminLayout from '@/components/layout/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { 
@@ -54,7 +54,7 @@ const OrdersPage = () => {
       case 'shipped':
         return (
           <Badge variant="outline" className="flex items-center gap-1 bg-blue-50 text-blue-700 border-blue-200">
-            <CheckCircle2 size={12} />
+            <Truck size={12} />
             Shipped
           </Badge>
         );
@@ -97,6 +97,7 @@ const OrdersPage = () => {
         });
       }
       
+      toast.success(`Order status updated to ${status}`);
     } catch (error) {
       console.error('Failed to update order status:', error);
       toast.error('Failed to update order status');
@@ -147,7 +148,7 @@ const OrdersPage = () => {
                   <td className="py-2 px-4">
                     {getStatusBadge(order.status)}
                   </td>
-                  <td className="py-2 px-4">र {order.total.toFixed(2)}</td>
+                  <td className="py-2 px-4">${order.total.toFixed(2)}</td>
                   <td className="py-2 px-4">
                     <Button 
                       size="sm" 
@@ -212,7 +213,7 @@ const OrdersPage = () => {
                             Qty: {item.quantity} {item.size && `- Size: ${item.size}`}
                           </p>
                         </div>
-                        <p>र {item.price.toFixed(2)}</p>
+                        <p>${item.price.toFixed(2)}</p>
                       </li>
                     ))}
                   </ul>
@@ -220,7 +221,7 @@ const OrdersPage = () => {
                 
                 <div className="flex justify-between font-medium pt-2 border-t">
                   <p>Total</p>
-                  <p>र {selectedOrder.total.toFixed(2)}</p>
+                  <p>${selectedOrder.total.toFixed(2)}</p>
                 </div>
                 
                 <div className="pt-4 border-t">
@@ -243,7 +244,7 @@ const OrdersPage = () => {
                       onClick={() => handleUpdateOrderStatus(selectedOrder.id, 'shipped')}
                       disabled={isUpdatingStatus}
                     >
-                      <CheckCircle2 size={16} className="mr-1" />
+                      <Truck size={16} className="mr-1" />
                       Shipped
                     </Button>
                     <Button 

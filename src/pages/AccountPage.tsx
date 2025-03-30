@@ -37,6 +37,10 @@ const AccountPage = () => {
     );
   }
 
+  const formattedDate = user.dateOfBirth 
+    ? new Date(user.dateOfBirth).toLocaleDateString() 
+    : new Date().toLocaleDateString();
+
   return (
     <Layout>
       <div className="container mx-auto px-4 py-12">
@@ -196,7 +200,7 @@ const AccountPage = () => {
                       <Button variant="outline" size="sm">Edit</Button>
                     </div>
                     <p className="text-muted-foreground mb-2">{user.email}</p>
-                    <p className="text-muted-foreground">Customer since {new Date(user.createdAt).toLocaleDateString()}</p>
+                    <p className="text-muted-foreground">Customer since {formattedDate}</p>
                   </div>
                   
                   <div className="border rounded-lg p-6">
