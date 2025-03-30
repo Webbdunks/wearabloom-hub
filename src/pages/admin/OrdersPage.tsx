@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { Eye, XCircle, CheckCircle2, Clock } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Eye, XCircle, CheckCircle2, Clock, Loader2 } from 'lucide-react';
 import AdminLayout from '@/components/layout/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { 
@@ -13,104 +13,56 @@ import {
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-
-type OrderItem = {
-  id: string;
-  productName: string;
-  quantity: number;
-  price: number;
-};
-
-type Order = {
-  id: string;
-  customerName: string;
-  email: string;
-  date: string;
-  status: 'pending' | 'completed' | 'cancelled';
-  items: OrderItem[];
-  total: number;
-  address: string;
-};
-
-// Mock orders data
-const mockOrders: Order[] = [
-  {
-    id: 'ORD-001',
-    customerName: 'John Doe',
-    email: 'john@example.com',
-    date: '2023-05-15',
-    status: 'completed',
-    items: [
-      { id: '1', productName: 'Minimal Wool Coat', quantity: 1, price: 289.99 },
-      { id: '3', productName: 'Structured Blazer', quantity: 1, price: 199.99 }
-    ],
-    total: 489.98,
-    address: '123 Main St, Mumbai, Maharashtra, 400001, India'
-  },
-  {
-    id: 'ORD-002',
-    customerName: 'Jane Smith',
-    email: 'jane@example.com',
-    date: '2023-05-16',
-    status: 'pending',
-    items: [
-      { id: '6', productName: 'Silk Scarf', quantity: 2, price: 59.99 }
-    ],
-    total: 119.98,
-    address: '456 Park Ave, Delhi, Delhi, 110001, India'
-  },
-  {
-    id: 'ORD-003',
-    customerName: 'Mike Johnson',
-    email: 'mike@example.com',
-    date: '2023-05-14',
-    status: 'cancelled',
-    items: [
-      { id: '4', productName: 'Cashmere Sweater', quantity: 1, price: 149.99 }
-    ],
-    total: 149.99,
-    address: '789 Oak St, Bangalore, Karnataka, 560001, India'
-  },
-  {
-    id: 'ORD-004',
-    customerName: 'Sarah Williams',
-    email: 'sarah@example.com',
-    date: '2023-05-17',
-    status: 'pending',
-    items: [
-      { id: '2', productName: 'Relaxed Linen Shirt', quantity: 1, price: 89.99 },
-      { id: '5', productName: 'Slim Fit Jeans', quantity: 1, price: 79.99 },
-      { id: '7', productName: 'Leather Tote Bag', quantity: 1, price: 129.99 }
-    ],
-    total: 299.97,
-    address: '321 Pine St, Chennai, Tamil Nadu, 600001, India'
-  }
-];
+import { useOrders } from '@/context/OrderContext';
+import { Order, OrderStatus } from '@/types';
 
 const OrdersPage = () => {
-  const [orders, setOrders] = useState<Order[]>(mockOrders);
+  const { getAllOrders, updateOrderStatus, isLoading } = useOrders();
+  const [orders, setOrders] = useState<Order[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  
+  useEffect(() => {
+    const loadOrders = async () => {
+      try {
+        const allOrders = await getAllOrders();
+        setOrders(allOrders);
+      } catch (error) {
+        console.error('Failed to load orders:', error);
+        toast.error('Failed to load orders');
+      }
+    };
+    
+    loadOrders();
+  }, [getAllOrders]);
   
   const handleViewDetails = (order: Order) => {
     setSelectedOrder(order);
     setIsDetailsOpen(true);
   };
   
-  const getStatusBadge = (status: Order['status']) => {
+  const getStatusBadge = (status: OrderStatus) => {
     switch (status) {
-      case 'pending':
+      case 'processing':
         return (
           <Badge variant="outline" className="flex items-center gap-1 bg-yellow-50 text-yellow-700 border-yellow-200">
             <Clock size={12} />
-            Pending
+            Processing
           </Badge>
         );
-      case 'completed':
+      case 'shipped':
+        return (
+          <Badge variant="outline" className="flex items-center gap-1 bg-blue-50 text-blue-700 border-blue-200">
+            <CheckCircle2 size={12} />
+            Shipped
+          </Badge>
+        );
+      case 'delivered':
         return (
           <Badge variant="outline" className="flex items-center gap-1 bg-green-50 text-green-700 border-green-200">
             <CheckCircle2 size={12} />
-            Completed
+            Delivered
           </Badge>
         );
       case 'cancelled':
@@ -125,15 +77,44 @@ const OrdersPage = () => {
     }
   };
   
-  const updateOrderStatus = (orderId: string, status: Order['status']) => {
-    setOrders(orders.map(order => 
-      order.id === orderId ? { ...order, status } : order
-    ));
-    setIsDetailsOpen(false);
-    
-    const statusText = status.charAt(0).toUpperCase() + status.slice(1);
-    toast.success(`Order status updated to: ${statusText}`);
+  const handleUpdateOrderStatus = async (orderId: string, status: OrderStatus) => {
+    try {
+      setIsUpdatingStatus(true);
+      await updateOrderStatus(orderId, status);
+      
+      // Update the local orders state
+      setOrders(prevOrders => 
+        prevOrders.map(order => 
+          order.id === orderId ? { ...order, status } : order
+        )
+      );
+      
+      // Update the selected order if it's open
+      if (selectedOrder && selectedOrder.id === orderId) {
+        setSelectedOrder({
+          ...selectedOrder,
+          status
+        });
+      }
+      
+    } catch (error) {
+      console.error('Failed to update order status:', error);
+      toast.error('Failed to update order status');
+    } finally {
+      setIsUpdatingStatus(false);
+    }
   };
+  
+  if (isLoading) {
+    return (
+      <AdminLayout title="Orders">
+        <div className="flex justify-center items-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-2">Loading orders...</span>
+        </div>
+      </AdminLayout>
+    );
+  }
   
   return (
     <AdminLayout title="Orders">
@@ -157,27 +138,35 @@ const OrdersPage = () => {
             </tr>
           </thead>
           <tbody>
-            {orders.map(order => (
-              <tr key={order.id} className="border-b hover:bg-gray-50">
-                <td className="py-2 px-4">{order.id}</td>
-                <td className="py-2 px-4">{order.customerName}</td>
-                <td className="py-2 px-4">{order.date}</td>
-                <td className="py-2 px-4">
-                  {getStatusBadge(order.status)}
-                </td>
-                <td className="py-2 px-4">र {order.total.toFixed(2)}</td>
-                <td className="py-2 px-4">
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={() => handleViewDetails(order)}
-                  >
-                    <Eye size={16} className="mr-1" />
-                    View
-                  </Button>
+            {orders.length > 0 ? (
+              orders.map(order => (
+                <tr key={order.id} className="border-b hover:bg-gray-50">
+                  <td className="py-2 px-4">{order.id.slice(0, 8)}</td>
+                  <td className="py-2 px-4">{order.customerName}</td>
+                  <td className="py-2 px-4">{new Date(order.createdAt).toLocaleDateString()}</td>
+                  <td className="py-2 px-4">
+                    {getStatusBadge(order.status)}
+                  </td>
+                  <td className="py-2 px-4">र {order.total.toFixed(2)}</td>
+                  <td className="py-2 px-4">
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => handleViewDetails(order)}
+                    >
+                      <Eye size={16} className="mr-1" />
+                      View
+                    </Button>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={6} className="py-8 text-center text-muted-foreground">
+                  No orders found
                 </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>
@@ -186,7 +175,7 @@ const OrdersPage = () => {
       <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Order Details - {selectedOrder?.id}</DialogTitle>
+            <DialogTitle>Order Details - {selectedOrder?.id.slice(0, 8)}</DialogTitle>
           </DialogHeader>
           
           {selectedOrder && (
@@ -200,7 +189,9 @@ const OrdersPage = () => {
                 
                 <div>
                   <h3 className="text-sm font-medium text-muted-foreground">Shipping Address</h3>
-                  <p className="mt-1 text-sm">{selectedOrder.address}</p>
+                  <p className="mt-1 text-sm">
+                    {selectedOrder.shippingAddress.streetAddress}, {selectedOrder.shippingAddress.city}, {selectedOrder.shippingAddress.state}, {selectedOrder.shippingAddress.postalCode}, {selectedOrder.shippingAddress.country}
+                  </p>
                 </div>
                 
                 <div>
@@ -213,11 +204,13 @@ const OrdersPage = () => {
                 <div>
                   <h3 className="text-sm font-medium text-muted-foreground">Items</h3>
                   <ul className="mt-2 divide-y border rounded-md overflow-hidden">
-                    {selectedOrder.items.map(item => (
-                      <li key={item.id} className="p-2 flex justify-between">
+                    {selectedOrder.items.map((item, index) => (
+                      <li key={index} className="p-2 flex justify-between">
                         <div>
                           <p className="font-medium">{item.productName}</p>
-                          <p className="text-sm text-muted-foreground">Qty: {item.quantity}</p>
+                          <p className="text-sm text-muted-foreground">
+                            Qty: {item.quantity} {item.size && `- Size: ${item.size}`}
+                          </p>
                         </div>
                         <p>र {item.price.toFixed(2)}</p>
                       </li>
@@ -232,35 +225,54 @@ const OrdersPage = () => {
                 
                 <div className="pt-4 border-t">
                   <h3 className="text-sm font-medium text-muted-foreground mb-2">Update Status</h3>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <Button 
                       size="sm"
-                      variant={selectedOrder.status === 'pending' ? 'default' : 'outline'}
+                      variant={selectedOrder.status === 'processing' ? 'default' : 'outline'}
                       className="flex-1"
-                      onClick={() => updateOrderStatus(selectedOrder.id, 'pending')}
+                      onClick={() => handleUpdateOrderStatus(selectedOrder.id, 'processing')}
+                      disabled={isUpdatingStatus}
                     >
                       <Clock size={16} className="mr-1" />
-                      Pending
+                      Processing
                     </Button>
                     <Button 
                       size="sm"
-                      variant={selectedOrder.status === 'completed' ? 'default' : 'outline'}
+                      variant={selectedOrder.status === 'shipped' ? 'default' : 'outline'}
                       className="flex-1"
-                      onClick={() => updateOrderStatus(selectedOrder.id, 'completed')}
+                      onClick={() => handleUpdateOrderStatus(selectedOrder.id, 'shipped')}
+                      disabled={isUpdatingStatus}
                     >
                       <CheckCircle2 size={16} className="mr-1" />
-                      Complete
+                      Shipped
+                    </Button>
+                    <Button 
+                      size="sm"
+                      variant={selectedOrder.status === 'delivered' ? 'default' : 'outline'}
+                      className="flex-1"
+                      onClick={() => handleUpdateOrderStatus(selectedOrder.id, 'delivered')}
+                      disabled={isUpdatingStatus}
+                    >
+                      <CheckCircle2 size={16} className="mr-1" />
+                      Delivered
                     </Button>
                     <Button 
                       size="sm"
                       variant={selectedOrder.status === 'cancelled' ? 'default' : 'outline'}
                       className="flex-1"
-                      onClick={() => updateOrderStatus(selectedOrder.id, 'cancelled')}
+                      onClick={() => handleUpdateOrderStatus(selectedOrder.id, 'cancelled')}
+                      disabled={isUpdatingStatus}
                     >
                       <XCircle size={16} className="mr-1" />
                       Cancel
                     </Button>
                   </div>
+                  {isUpdatingStatus && (
+                    <div className="mt-2 flex items-center justify-center">
+                      <Loader2 size={16} className="animate-spin mr-2" />
+                      <span className="text-sm">Updating status...</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

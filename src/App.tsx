@@ -1,4 +1,3 @@
-
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 import HomePage from "./pages/HomePage";
@@ -22,8 +21,8 @@ import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
 import { WishlistProvider } from "./context/WishlistContext";
 import { ProductProvider } from "./context/ProductContext";
+import { OrderProvider } from "./context/OrderContext";
 
-// Admin route protection component
 const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, isLoading } = useAuth();
   
@@ -42,7 +41,6 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
-// Protected route for authenticated users
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, isLoading } = useAuth();
   
@@ -73,7 +71,6 @@ function AppRoutes() {
       <Route path="/wishlist" element={<ProtectedRoute><WishlistPage /></ProtectedRoute>} />
       <Route path="/search" element={<SearchPage />} />
       
-      {/* Admin Routes with protection */}
       <Route path="/admin/dashboard" element={<AdminRoute><AdminDashboardPage /></AdminRoute>} />
       <Route path="/admin/products" element={<AdminRoute><ProductManagementPage /></AdminRoute>} />
       <Route path="/admin/orders" element={<AdminRoute><OrdersPage /></AdminRoute>} />
@@ -89,11 +86,13 @@ function App() {
       <ScrollToTop />
       <AuthProvider>
         <ProductProvider>
-          <CartProvider>
-            <WishlistProvider>
-              <AppRoutes />
-            </WishlistProvider>
-          </CartProvider>
+          <OrderProvider>
+            <CartProvider>
+              <WishlistProvider>
+                <AppRoutes />
+              </WishlistProvider>
+            </CartProvider>
+          </OrderProvider>
         </ProductProvider>
       </AuthProvider>
       <Toaster />

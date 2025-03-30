@@ -11,7 +11,7 @@ import { useProducts } from '@/context/ProductContext';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Product } from '@/types';
-import { supabase } from '@/lib/supabaseClient';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { 
   Select,

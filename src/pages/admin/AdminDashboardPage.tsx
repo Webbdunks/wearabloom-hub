@@ -1,18 +1,70 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PackageSearch, ClipboardList, BarChart3, Users } from 'lucide-react';
 import AdminLayout from '@/components/layout/AdminLayout';
 import { Button } from '@/components/ui/button';
-import { products } from '@/data/products';
+import { useProducts } from '@/context/ProductContext';
+import { useOrders } from '@/context/OrderContext';
+import { supabase } from '@/integrations/supabase/client';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const AdminDashboardPage = () => {
   const navigate = useNavigate();
+  const { products, isLoading: productsLoading } = useProducts();
+  const { getAllOrders, isLoading: ordersLoading } = useOrders();
+  const [orders, setOrders] = useState<any[]>([]);
+  const [userCount, setUserCount] = useState<number>(0);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(true);
+  const [isLoadingOrders, setIsLoadingOrders] = useState(true);
   
-  // Calculate some basic statistics for the dashboard
+  // Fetch orders data
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        setIsLoadingOrders(true);
+        const allOrders = await getAllOrders();
+        setOrders(allOrders);
+      } catch (error) {
+        console.error('Error fetching orders:', error);
+      } finally {
+        setIsLoadingOrders(false);
+      }
+    };
+    
+    fetchOrders();
+  }, [getAllOrders]);
+  
+  // Fetch user count
+  useEffect(() => {
+    const fetchUserCount = async () => {
+      try {
+        setIsLoadingUsers(true);
+        const { count, error } = await supabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true });
+          
+        if (error) throw error;
+        
+        setUserCount(count || 0);
+      } catch (error) {
+        console.error('Error fetching user count:', error);
+      } finally {
+        setIsLoadingUsers(false);
+      }
+    };
+    
+    fetchUserCount();
+  }, []);
+  
+  // Calculate product statistics
   const totalProducts = products.length;
   const featuredProducts = products.filter(p => p.featured).length;
   const newProducts = products.filter(p => p.new).length;
+  const recentOrders = orders.length;
+  
+  // Loading states
+  const isLoading = productsLoading || ordersLoading || isLoadingUsers || isLoadingOrders;
   
   return (
     <AdminLayout title="Dashboard">
@@ -25,7 +77,11 @@ const AdminDashboardPage = () => {
             </div>
             <div>
               <p className="text-sm font-medium text-muted-foreground">Total Products</p>
-              <h4 className="text-2xl font-semibold">{totalProducts}</h4>
+              {isLoading ? (
+                <Skeleton className="h-8 w-16" />
+              ) : (
+                <h4 className="text-2xl font-semibold">{totalProducts}</h4>
+              )}
             </div>
           </div>
         </div>
@@ -37,7 +93,11 @@ const AdminDashboardPage = () => {
             </div>
             <div>
               <p className="text-sm font-medium text-muted-foreground">Featured Products</p>
-              <h4 className="text-2xl font-semibold">{featuredProducts}</h4>
+              {isLoading ? (
+                <Skeleton className="h-8 w-16" />
+              ) : (
+                <h4 className="text-2xl font-semibold">{featuredProducts}</h4>
+              )}
             </div>
           </div>
         </div>
@@ -48,8 +108,12 @@ const AdminDashboardPage = () => {
               <Users size={20} className="text-green-500" />
             </div>
             <div>
-              <p className="text-sm font-medium text-muted-foreground">New Products</p>
-              <h4 className="text-2xl font-semibold">{newProducts}</h4>
+              <p className="text-sm font-medium text-muted-foreground">Total Customers</p>
+              {isLoadingUsers ? (
+                <Skeleton className="h-8 w-16" />
+              ) : (
+                <h4 className="text-2xl font-semibold">{userCount}</h4>
+              )}
             </div>
           </div>
         </div>
@@ -61,7 +125,11 @@ const AdminDashboardPage = () => {
             </div>
             <div>
               <p className="text-sm font-medium text-muted-foreground">Recent Orders</p>
-              <h4 className="text-2xl font-semibold">4</h4>
+              {isLoadingOrders ? (
+                <Skeleton className="h-8 w-16" />
+              ) : (
+                <h4 className="text-2xl font-semibold">{recentOrders}</h4>
+              )}
             </div>
           </div>
         </div>
