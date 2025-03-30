@@ -7,9 +7,10 @@ import { supabase } from '@/integrations/supabase/client';
 
 type ProductContextType = {
   products: Product[];
-  addProduct: (product: Omit<Product, 'id'>) => void;
-  updateProduct: (product: Product) => void;
-  deleteProduct: (id: string) => void;
+  setProducts: React.Dispatch<React.SetStateAction<Product[]>>; 
+  addProduct: (product: Omit<Product, 'id'>) => Promise<Product>;
+  updateProduct: (product: Product) => Promise<void>;
+  deleteProduct: (id: string) => Promise<void>;
   isLoading: boolean;
   error: string | null;
 };
@@ -96,7 +97,7 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ child
     fetchProducts();
   }, []);
 
-  const addProduct = async (productData: Omit<Product, 'id'>) => {
+  const addProduct = async (productData: Omit<Product, 'id'>): Promise<Product> => {
     try {
       setIsLoading(true);
       
@@ -134,17 +135,16 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ child
       
       // Update local state
       setProducts(prevProducts => [...prevProducts, newProduct]);
-      toast.success('Product added successfully');
       return newProduct;
     } catch (err: any) {
-      toast.error('Failed to add product: ' + err.message);
+      console.error('Failed to add product:', err);
       throw err;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const updateProduct = async (updatedProduct: Product) => {
+  const updateProduct = async (updatedProduct: Product): Promise<void> => {
     try {
       setIsLoading(true);
       
@@ -165,23 +165,21 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ child
         
       if (error) throw error;
       
-      // Update local state
+      // Update local state immediately for UI responsiveness
       setProducts(prevProducts =>
         prevProducts.map(product =>
           product.id === updatedProduct.id ? updatedProduct : product
         )
       );
-      
-      toast.success('Product updated successfully');
     } catch (err: any) {
-      toast.error('Failed to update product: ' + err.message);
+      console.error('Failed to update product:', err);
       throw err;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const deleteProduct = async (id: string) => {
+  const deleteProduct = async (id: string): Promise<void> => {
     try {
       setIsLoading(true);
       
@@ -193,11 +191,10 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ child
         
       if (error) throw error;
       
-      // Update local state
+      // Update local state immediately for UI responsiveness
       setProducts(prevProducts => prevProducts.filter(product => product.id !== id));
-      toast.success('Product deleted successfully');
     } catch (err: any) {
-      toast.error('Failed to delete product: ' + err.message);
+      console.error('Failed to delete product:', err);
       throw err;
     } finally {
       setIsLoading(false);
@@ -206,7 +203,15 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   return (
     <ProductContext.Provider
-      value={{ products, addProduct, updateProduct, deleteProduct, isLoading, error }}
+      value={{ 
+        products, 
+        setProducts, 
+        addProduct, 
+        updateProduct, 
+        deleteProduct, 
+        isLoading, 
+        error 
+      }}
     >
       {children}
     </ProductContext.Provider>
