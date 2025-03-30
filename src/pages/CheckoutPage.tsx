@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CreditCard, Truck, Check } from 'lucide-react';
@@ -21,13 +20,15 @@ import {
 } from '@/components/ui/tabs';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
-import { Address } from '@/types';
+import { useOrders } from '@/context/OrderContext';
+import { Address, Order } from '@/types';
 import { Separator } from '@/components/ui/separator';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 const CheckoutPage = () => {
   const { items, subtotal, clearCart } = useCart();
   const { user } = useAuth();
+  const { createOrder, isLoading: isOrderLoading } = useOrders();
   const navigate = useNavigate();
   
   const [currentStep, setCurrentStep] = useState(1);
@@ -48,6 +49,7 @@ const CheckoutPage = () => {
     cvv: ''
   });
   const [isOrderPlaced, setIsOrderPlaced] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   
   // Calculate costs
   const shippingCost = subtotal >= 100 ? 0 : 10;
@@ -107,17 +109,46 @@ const CheckoutPage = () => {
     }
   };
   
-  const placeOrder = () => {
-    // Simulating order placement with a timeout
-    setTimeout(() => {
+  const placeOrder = async () => {
+    if (!user) return;
+    
+    setIsProcessing(true);
+    
+    try {
+      // Create order object
+      const orderData: Omit<Order, 'id' | 'createdAt'> = {
+        userId: user.id,
+        customerName: address.fullName,
+        email: user.email || '',
+        items: items.map(item => ({
+          productId: item.product.id,
+          productName: item.product.name,
+          quantity: item.quantity,
+          size: item.size,
+          price: item.product.price
+        })),
+        status: 'processing',
+        shippingAddress: address,
+        total: total
+      };
+      
+      // Save order to database
+      const newOrder = await createOrder(orderData);
+      
+      // Clear cart
       clearCart();
       setIsOrderPlaced(true);
       
-      // Simulating redirect to order confirmation after a delay
+      // Navigate to order confirmation with the order ID
       setTimeout(() => {
-        navigate('/order-confirmation', { state: { orderId: Math.floor(Math.random() * 10000000) } });
+        navigate('/order-confirmation', { state: { orderId: newOrder.id } });
       }, 2000);
-    }, 1500);
+      
+    } catch (error) {
+      console.error('Error placing order:', error);
+    } finally {
+      setIsProcessing(false);
+    }
   };
   
   if (isOrderPlaced) {
@@ -294,7 +325,7 @@ const CheckoutPage = () => {
               <div className="bg-card p-6 border rounded-lg animate-fade-in">
                 <h2 className="text-lg font-medium mb-6">Payment Method</h2>
                 
-                <Tabs defaultValue="card" className="mb-6" onValueChange={setPaymentMethod}>
+                <Tabs defaultValue="credit-card" className="mb-6" onValueChange={setPaymentMethod}>
                   <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="credit-card" className="flex items-center gap-2">
                       <CreditCard size={16} /> Credit Card
@@ -371,15 +402,22 @@ const CheckoutPage = () => {
                     variant="outline" 
                     className="flex-1"
                     onClick={() => setCurrentStep(1)}
+                    disabled={isProcessing || isOrderLoading}
                   >
                     Back
                   </Button>
                   <Button 
                     className="flex-1 flex items-center justify-center gap-2"
                     onClick={handleContinue}
-                    disabled={!isPaymentValid()}
+                    disabled={!isPaymentValid() || isProcessing || isOrderLoading}
                   >
-                    <Truck size={16} /> Place Order
+                    {(isProcessing || isOrderLoading) ? (
+                      <>Processing...</>
+                    ) : (
+                      <>
+                        <Truck size={16} /> Place Order
+                      </>
+                    )}
                   </Button>
                 </div>
               </div>

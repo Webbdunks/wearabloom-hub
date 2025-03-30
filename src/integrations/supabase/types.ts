@@ -27,6 +27,42 @@ export type Database = {
         }
         Relationships: []
       }
+      orders: {
+        Row: {
+          created_at: string
+          customer_name: string
+          email: string
+          id: string
+          items: Json
+          shipping_address: Json
+          status: string
+          total: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          customer_name: string
+          email: string
+          id?: string
+          items: Json
+          shipping_address: Json
+          status?: string
+          total: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          customer_name?: string
+          email?: string
+          id?: string
+          items?: Json
+          shipping_address?: Json
+          status?: string
+          total?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           category: string | null

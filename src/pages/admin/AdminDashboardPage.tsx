@@ -61,6 +61,7 @@ const AdminDashboardPage = () => {
   const totalProducts = products.length;
   const featuredProducts = products.filter(p => p.featured).length;
   const newProducts = products.filter(p => p.new).length;
+  const totalRevenue = orders.reduce((sum, order) => sum + order.total, 0);
   const recentOrders = orders.length;
   
   // Loading states
@@ -92,11 +93,11 @@ const AdminDashboardPage = () => {
               <BarChart3 size={20} className="text-blue-500" />
             </div>
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Featured Products</p>
+              <p className="text-sm font-medium text-muted-foreground">Total Revenue</p>
               {isLoading ? (
                 <Skeleton className="h-8 w-16" />
               ) : (
-                <h4 className="text-2xl font-semibold">{featuredProducts}</h4>
+                <h4 className="text-2xl font-semibold">${totalRevenue.toFixed(2)}</h4>
               )}
             </div>
           </div>
@@ -124,7 +125,7 @@ const AdminDashboardPage = () => {
               <ClipboardList size={20} className="text-amber-500" />
             </div>
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Recent Orders</p>
+              <p className="text-sm font-medium text-muted-foreground">Total Orders</p>
               {isLoadingOrders ? (
                 <Skeleton className="h-8 w-16" />
               ) : (
@@ -132,6 +133,92 @@ const AdminDashboardPage = () => {
               )}
             </div>
           </div>
+        </div>
+      </div>
+      
+      {/* Recent Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="bg-white p-4 rounded-lg shadow border border-gray-100">
+          <h3 className="text-lg font-medium mb-4">Sales by Product Category</h3>
+          {isLoading ? (
+            <Skeleton className="h-56 w-full" />
+          ) : (
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center">
+                  <div className="w-3 h-3 rounded-full bg-primary mr-2"></div>
+                  <span>Men</span>
+                </div>
+                <span className="font-medium">{products.filter(p => p.category === 'men').length}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <div className="flex items-center">
+                  <div className="w-3 h-3 rounded-full bg-blue-500 mr-2"></div>
+                  <span>Women</span>
+                </div>
+                <span className="font-medium">{products.filter(p => p.category === 'women').length}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <div className="flex items-center">
+                  <div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
+                  <span>Accessories</span>
+                </div>
+                <span className="font-medium">{products.filter(p => p.category === 'accessories').length}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <div className="flex items-center">
+                  <div className="w-3 h-3 rounded-full bg-amber-500 mr-2"></div>
+                  <span>Featured</span>
+                </div>
+                <span className="font-medium">{featuredProducts}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <div className="flex items-center">
+                  <div className="w-3 h-3 rounded-full bg-red-500 mr-2"></div>
+                  <span>New Arrivals</span>
+                </div>
+                <span className="font-medium">{newProducts}</span>
+              </div>
+            </div>
+          )}
+        </div>
+        
+        <div className="bg-white p-4 rounded-lg shadow border border-gray-100">
+          <h3 className="text-lg font-medium mb-4">Orders by Status</h3>
+          {isLoading ? (
+            <Skeleton className="h-56 w-full" />
+          ) : (
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center">
+                  <div className="w-3 h-3 rounded-full bg-yellow-500 mr-2"></div>
+                  <span>Processing</span>
+                </div>
+                <span className="font-medium">{orders.filter(o => o.status === 'processing').length}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <div className="flex items-center">
+                  <div className="w-3 h-3 rounded-full bg-blue-500 mr-2"></div>
+                  <span>Shipped</span>
+                </div>
+                <span className="font-medium">{orders.filter(o => o.status === 'shipped').length}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <div className="flex items-center">
+                  <div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
+                  <span>Delivered</span>
+                </div>
+                <span className="font-medium">{orders.filter(o => o.status === 'delivered').length}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <div className="flex items-center">
+                  <div className="w-3 h-3 rounded-full bg-red-500 mr-2"></div>
+                  <span>Cancelled</span>
+                </div>
+                <span className="font-medium">{orders.filter(o => o.status === 'cancelled').length}</span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
       
@@ -153,7 +240,7 @@ const AdminDashboardPage = () => {
         
         <div className="flex flex-col items-center p-6 border rounded-lg hover:border-primary transition-colors bg-white shadow-sm">
           <ClipboardList size={48} className="mb-4 text-primary" />
-          <h3 className="text-xl font-medium mb-2">View Orders</h3>
+          <h3 className="text-xl font-medium mb-2">Manage Orders</h3>
           <p className="text-muted-foreground text-center mb-4">
             View and manage customer orders
           </p>
@@ -161,7 +248,7 @@ const AdminDashboardPage = () => {
             onClick={() => navigate('/admin/orders')}
             className="mt-auto"
           >
-            View Orders
+            Manage Orders
           </Button>
         </div>
       </div>

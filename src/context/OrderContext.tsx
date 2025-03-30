@@ -59,22 +59,25 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           shipping_address: orderData.shippingAddress,
           total: orderData.total
         })
-        .select()
-        .single();
+        .select();
         
       if (error) throw error;
       
+      if (!data || data.length === 0) {
+        throw new Error('Failed to create order: No data returned');
+      }
+      
       // Transform to match Order type
       const newOrder: Order = {
-        id: data.id,
-        userId: data.user_id,
-        customerName: data.customer_name,
-        email: data.email,
-        items: data.items,
-        status: data.status,
-        shippingAddress: data.shipping_address,
-        total: data.total,
-        createdAt: data.created_at
+        id: data[0].id,
+        userId: data[0].user_id,
+        customerName: data[0].customer_name,
+        email: data[0].email,
+        items: data[0].items,
+        status: data[0].status,
+        shippingAddress: data[0].shipping_address,
+        total: data[0].total,
+        createdAt: data[0].created_at
       };
       
       // Update local state
@@ -132,6 +135,10 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         
       if (error) throw error;
       
+      if (!data) {
+        return [];
+      }
+      
       // Transform to match Order type
       const allOrders: Order[] = data.map(item => ({
         id: item.id,
@@ -139,7 +146,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         customerName: item.customer_name,
         email: item.email,
         items: item.items,
-        status: item.status,
+        status: item.status as OrderStatus,
         shippingAddress: item.shipping_address,
         total: item.total,
         createdAt: item.created_at
@@ -168,6 +175,10 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         
       if (error) throw error;
       
+      if (!data) {
+        return [];
+      }
+      
       // Transform to match Order type
       const userOrders: Order[] = data.map(item => ({
         id: item.id,
@@ -175,7 +186,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         customerName: item.customer_name,
         email: item.email,
         items: item.items,
-        status: item.status,
+        status: item.status as OrderStatus,
         shippingAddress: item.shipping_address,
         total: item.total,
         createdAt: item.created_at
