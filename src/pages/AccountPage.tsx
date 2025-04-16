@@ -1,34 +1,51 @@
 
-import React, { useState } from 'react';
-import { User, Package, LogOut, Home, CreditCard, Settings } from 'lucide-react';
-import Layout from '@/components/layout/Layout';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { 
-  Tabs, 
-  TabsContent, 
-  TabsList, 
-  TabsTrigger 
-} from '@/components/ui/tabs';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/context/AuthContext';
-import { Separator } from '@/components/ui/separator';
+import Layout from '@/components/layout/Layout';
+import { UserAddress } from '@/types';
+import { Loader2 } from 'lucide-react';
 import OrderList from '@/components/account/OrderList';
 
 const AccountPage = () => {
-  const { user, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState('overview');
+  const { user, loading } = useAuth();
+  const [activeTab, setActiveTab] = useState('profile');
+  
+  // Mock addresses for now - would come from a user profile API call in a real app
+  const [addresses, setAddresses] = useState<UserAddress[]>([
+    {
+      id: '1',
+      fullName: 'John Doe',
+      streetAddress: '123 Main St',
+      city: 'New York',
+      state: 'NY',
+      postalCode: '10001',
+      country: 'USA',
+      phone: '212-555-1234',
+      isDefault: true,
+      type: 'shipping'
+    }
+  ]);
 
-  const handleLogout = async () => {
-    await logout();
-  };
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-[calc(100vh-200px)]">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-2">Loading your account...</span>
+        </div>
+      </Layout>
+    );
+  }
 
   if (!user) {
     return (
       <Layout>
-        <div className="container mx-auto px-4 py-12 text-center">
-          <h1 className="text-3xl font-light mb-4">You are not logged in</h1>
-          <p className="text-muted-foreground mb-6">
-            Please log in to view your account.
-          </p>
+        <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)]">
+          <h1 className="text-2xl font-semibold mb-4">You are not logged in</h1>
+          <p className="text-muted-foreground mb-6">Please log in to view your account details</p>
           <Button asChild>
             <a href="/login">Log In</a>
           </Button>
@@ -37,230 +54,162 @@ const AccountPage = () => {
     );
   }
 
-  const formattedDate = user.dateOfBirth 
-    ? new Date(user.dateOfBirth).toLocaleDateString() 
-    : new Date().toLocaleDateString();
-
   return (
     <Layout>
       <div className="container mx-auto px-4 py-12">
-        <div className="flex flex-col md:flex-row gap-8">
-          {/* Sidebar */}
-          <div className="w-full md:w-64 shrink-0">
-            <div className="p-6 bg-card rounded-lg border mb-6">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                  <User className="h-6 w-6 text-primary" />
-                </div>
-                <div>
-                  <h2 className="font-medium">{user.email}</h2>
-                  <p className="text-sm text-muted-foreground">Customer</p>
-                </div>
-              </div>
-              <Separator className="my-4" />
-              <Button variant="outline" className="w-full" onClick={handleLogout}>
-                <LogOut className="mr-2 h-4 w-4" />
-                Log Out
-              </Button>
-            </div>
-            
-            <div className="hidden md:block">
-              <Tabs 
-                value={activeTab} 
-                onValueChange={setActiveTab} 
-                orientation="vertical" 
-                className="w-full"
-              >
-                <TabsList className="flex flex-col h-auto gap-1 bg-transparent p-0">
-                  <TabsTrigger 
-                    value="overview" 
-                    className="justify-start px-4 data-[state=active]:bg-secondary/50"
-                  >
-                    <Home className="mr-2 h-4 w-4" />
-                    Overview
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="orders" 
-                    className="justify-start px-4 data-[state=active]:bg-secondary/50"
-                  >
-                    <Package className="mr-2 h-4 w-4" />
-                    Orders
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="addresses" 
-                    className="justify-start px-4 data-[state=active]:bg-secondary/50"
-                  >
-                    <CreditCard className="mr-2 h-4 w-4" />
-                    Addresses
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="settings" 
-                    className="justify-start px-4 data-[state=active]:bg-secondary/50"
-                  >
-                    <Settings className="mr-2 h-4 w-4" />
-                    Settings
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
-            
-            <div className="block md:hidden">
-              <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="grid grid-cols-4 w-full">
-                  <TabsTrigger value="overview">
-                    <Home className="h-4 w-4" />
-                  </TabsTrigger>
-                  <TabsTrigger value="orders">
-                    <Package className="h-4 w-4" />
-                  </TabsTrigger>
-                  <TabsTrigger value="addresses">
-                    <CreditCard className="h-4 w-4" />
-                  </TabsTrigger>
-                  <TabsTrigger value="settings">
-                    <Settings className="h-4 w-4" />
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
-          </div>
+        <h1 className="text-3xl font-light mb-8">My Account</h1>
+        
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+            <TabsTrigger value="profile">Profile</TabsTrigger>
+            <TabsTrigger value="orders">Orders</TabsTrigger>
+            <TabsTrigger value="addresses">Addresses</TabsTrigger>
+            <TabsTrigger value="payments">Payment Methods</TabsTrigger>
+            <TabsTrigger value="settings">Settings</TabsTrigger>
+          </TabsList>
           
-          {/* Content */}
-          <div className="flex-1">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="hidden">
-              <TabsContent value="overview" className="mt-0">
-                <h1 className="text-3xl font-light mb-6">My Account</h1>
+          <TabsContent value="profile" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Profile Information</CardTitle>
+                <CardDescription>View and edit your personal information</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="border rounded-lg p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h2 className="text-lg font-medium">Account Details</h2>
-                      <Button variant="outline" size="sm">Edit</Button>
-                    </div>
-                    <p className="text-muted-foreground mb-2">{user.email}</p>
-                    <p className="text-muted-foreground">Customer since {new Date(user.createdAt).toLocaleDateString()}</p>
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-1">Full Name</h3>
+                    <p>{user.name || 'Not provided'}</p>
                   </div>
-                  
-                  <div className="border rounded-lg p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h2 className="text-lg font-medium">Recent Orders</h2>
-                      <Button variant="outline" size="sm" onClick={() => setActiveTab('orders')}>View All</Button>
-                    </div>
-                    <OrderList />
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-1">Email</h3>
+                    <p>{user.email}</p>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-1">Phone</h3>
+                    <p>{user.phone || 'Not provided'}</p>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-1">Date of Birth</h3>
+                    <p>{user.dateOfBirth || 'Not provided'}</p>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-1">Gender</h3>
+                    <p>{user.gender || 'Not provided'}</p>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-1">Account Created</h3>
+                    <p>{new Date(user.created_at).toLocaleDateString() || 'Unknown'}</p>
                   </div>
                 </div>
-              </TabsContent>
-              
-              <TabsContent value="orders" className="mt-0">
-                <h1 className="text-3xl font-light mb-6">My Orders</h1>
-                <OrderList />
-              </TabsContent>
-              
-              <TabsContent value="addresses" className="mt-0">
-                <h1 className="text-3xl font-light mb-6">My Addresses</h1>
-                <div className="text-center py-12">
-                  <CreditCard className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-medium mb-2">No Saved Addresses</h3>
-                  <p className="text-muted-foreground mb-6">
-                    You haven't saved any addresses yet.
+              </CardContent>
+              <CardFooter>
+                <Button variant="outline">Edit Profile</Button>
+              </CardFooter>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="orders" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Order History</CardTitle>
+                <CardDescription>View and track your orders</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <OrderList userId={user.id} />
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="addresses" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Saved Addresses</CardTitle>
+                <CardDescription>Manage your shipping and billing addresses</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {addresses.length > 0 ? (
+                  <div className="space-y-4">
+                    {addresses.map((address) => (
+                      <div key={address.id} className="border rounded-md p-4">
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <h3 className="font-medium">{address.fullName}</h3>
+                            {address.isDefault && (
+                              <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">Default</span>
+                            )}
+                          </div>
+                          <span className="text-xs uppercase bg-secondary px-2 py-0.5 rounded">
+                            {address.type}
+                          </span>
+                        </div>
+                        <p className="text-sm">{address.streetAddress}</p>
+                        <p className="text-sm">{address.city}, {address.state} {address.postalCode}</p>
+                        <p className="text-sm">{address.country}</p>
+                        {address.phone && <p className="text-sm mt-1">{address.phone}</p>}
+                        <div className="mt-3 flex gap-2">
+                          <Button variant="outline" size="sm">Edit</Button>
+                          <Button variant="outline" size="sm" className="text-destructive">Delete</Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-6">
+                    <p className="text-muted-foreground mb-4">You don't have any saved addresses yet.</p>
+                  </div>
+                )}
+              </CardContent>
+              <CardFooter>
+                <Button>Add New Address</Button>
+              </CardFooter>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="payments" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Payment Methods</CardTitle>
+                <CardDescription>Manage your saved payment methods</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-6">
+                  <p className="text-muted-foreground mb-4">You don't have any saved payment methods yet.</p>
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Button>Add Payment Method</Button>
+              </CardFooter>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="settings" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Account Settings</CardTitle>
+                <CardDescription>Manage your account preferences</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-4">
+                  <h3 className="text-sm font-medium">Email Notifications</h3>
+                  <p className="text-muted-foreground text-sm">
+                    Coming soon: Manage your email notification preferences
                   </p>
-                  <Button>
-                    Add New Address
-                  </Button>
                 </div>
-              </TabsContent>
-              
-              <TabsContent value="settings" className="mt-0">
-                <h1 className="text-3xl font-light mb-6">Account Settings</h1>
-                <div className="space-y-6">
-                  <div className="border rounded-lg p-6">
-                    <h2 className="text-lg font-medium mb-4">Change Password</h2>
-                    <p className="text-muted-foreground mb-6">
-                      Update your password to keep your account secure.
-                    </p>
-                    <Button>Change Password</Button>
-                  </div>
-                  
-                  <div className="border rounded-lg p-6">
-                    <h2 className="text-lg font-medium mb-4">Delete Account</h2>
-                    <p className="text-muted-foreground mb-6">
-                      Permanently delete your account and all associated data.
-                    </p>
+                <div className="space-y-4">
+                  <h3 className="text-sm font-medium">Password</h3>
+                  <Button variant="outline">Change Password</Button>
+                </div>
+                <div className="space-y-4">
+                  <h3 className="text-sm font-medium">Account Actions</h3>
+                  <div className="flex gap-2">
+                    <Button variant="outline">Log Out</Button>
                     <Button variant="destructive">Delete Account</Button>
                   </div>
                 </div>
-              </TabsContent>
-            </Tabs>
-            
-            {activeTab === 'overview' && (
-              <>
-                <h1 className="text-3xl font-light mb-6">My Account</h1>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="border rounded-lg p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h2 className="text-lg font-medium">Account Details</h2>
-                      <Button variant="outline" size="sm">Edit</Button>
-                    </div>
-                    <p className="text-muted-foreground mb-2">{user.email}</p>
-                    <p className="text-muted-foreground">Customer since {formattedDate}</p>
-                  </div>
-                  
-                  <div className="border rounded-lg p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h2 className="text-lg font-medium">Recent Orders</h2>
-                      <Button variant="outline" size="sm" onClick={() => setActiveTab('orders')}>View All</Button>
-                    </div>
-                    <OrderList />
-                  </div>
-                </div>
-              </>
-            )}
-            
-            {activeTab === 'orders' && (
-              <>
-                <h1 className="text-3xl font-light mb-6">My Orders</h1>
-                <OrderList />
-              </>
-            )}
-            
-            {activeTab === 'addresses' && (
-              <>
-                <h1 className="text-3xl font-light mb-6">My Addresses</h1>
-                <div className="text-center py-12">
-                  <CreditCard className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-medium mb-2">No Saved Addresses</h3>
-                  <p className="text-muted-foreground mb-6">
-                    You haven't saved any addresses yet.
-                  </p>
-                  <Button>
-                    Add New Address
-                  </Button>
-                </div>
-              </>
-            )}
-            
-            {activeTab === 'settings' && (
-              <>
-                <h1 className="text-3xl font-light mb-6">Account Settings</h1>
-                <div className="space-y-6">
-                  <div className="border rounded-lg p-6">
-                    <h2 className="text-lg font-medium mb-4">Change Password</h2>
-                    <p className="text-muted-foreground mb-6">
-                      Update your password to keep your account secure.
-                    </p>
-                    <Button>Change Password</Button>
-                  </div>
-                  
-                  <div className="border rounded-lg p-6">
-                    <h2 className="text-lg font-medium mb-4">Delete Account</h2>
-                    <p className="text-muted-foreground mb-6">
-                      Permanently delete your account and all associated data.
-                    </p>
-                    <Button variant="destructive">Delete Account</Button>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </Layout>
   );
